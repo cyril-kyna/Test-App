@@ -14,7 +14,10 @@ export default function Timesheet() {
   const [lastAction, setLastAction] = useState(''); // Store last action (TIME_IN, BREAK, TIME_OUT)
   const [dailySummary, setDailySummary] = useState(null); // Store daily summary data
   const [loading, setLoading] = useState(true); // Track loading state
-
+  // Individual loading states for each button
+  const [isTimeInLoading, setIsTimeInLoading] = useState(false);
+  const [isBreakLoading, setIsBreakLoading] = useState(false);
+  const [isTimeOutLoading, setIsTimeOutLoading] = useState(false);
   // Fetch timesheet data to determine last action
   const fetchTimesheetData = useCallback(async () => {
     if (session) {
@@ -167,12 +170,14 @@ function convertTo24HourFormat(timeString) {
           type="button"
           className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
           onClick={async () => {
+            setIsTimeInLoading(true); // Set loading state
             await formik.setFieldValue('action', 'TIME_IN');
-            formik.submitForm();
+            await formik.submitForm();
+            setIsTimeInLoading(false); // Reset loading state
           }}
-          disabled={!isInitialState && isTimeInDisabled}
+          disabled={isTimeInLoading || (!isInitialState && isTimeInDisabled)}
         >
-          Time In
+          {isTimeInLoading ? 'Loading...' : 'Time In'}
         </Button>
 
         <Button
@@ -180,12 +185,14 @@ function convertTo24HourFormat(timeString) {
           type="button"
           className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
           onClick={async () => {
+            setIsBreakLoading(true); // Set loading state
             await formik.setFieldValue('action', 'BREAK');
-            formik.submitForm();
+            await formik.submitForm();
+            setIsBreakLoading(false); // Reset loading state
           }}
-          disabled={isBreakDisabled}
+          disabled={isBreakLoading || isBreakDisabled}
         >
-          Break
+          {isBreakLoading ? 'Loading...' : 'Break'}
         </Button>
 
         <Button
@@ -193,12 +200,14 @@ function convertTo24HourFormat(timeString) {
           type="button"
           className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
           onClick={async () => {
+            setIsTimeOutLoading(true); // Set loading state
             await formik.setFieldValue('action', 'TIME_OUT');
-            formik.submitForm();
+            await formik.submitForm();
+            setIsTimeOutLoading(false); // Reset loading state
           }}
-          disabled={isTimeOutDisabled}
+          disabled={isTimeOutLoading || isTimeOutDisabled}
         >
-          Time Out
+          {isTimeOutLoading ? 'Loading...' : 'Time Out'}
         </Button>
       </form>
 
