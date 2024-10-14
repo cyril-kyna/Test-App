@@ -30,39 +30,51 @@ export default function Timesheet() {
     fetchTimesheetData();
   }, [session, fetchTimesheetData]);
 
-  // Convert UTC time span string (e.g., "04:34 AM to 04:35 AM") to local time
-  function convertTimeSpanToLocal(timeSpan) {
-    // Split the timeSpan into two parts (start and end times)
-    const [startTimeUTC, endTimeUTC] = timeSpan.split(' to ');
+// Convert UTC time span string (e.g., "04:34 AM to 04:35 AM") to local time
+function convertTimeSpanToLocal(timeSpan) {
+  // Split the timeSpan into two parts (start and end times)
+  const [startTimeUTC, endTimeUTC] = timeSpan.split(' to ');
 
-    // Convert each time from UTC to the user's local time
-    const localStartTime = new Date(`1970-01-01T${convertTo24HourFormat(startTimeUTC)}Z`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  // Convert start time from UTC to the user's local time
+  const localStartTime = new Date(`1970-01-01T${convertTo24HourFormat(startTimeUTC)}Z`).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
-    const localEndTime = new Date(`1970-01-01T${convertTo24HourFormat(endTimeUTC)}Z`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-
-    // Return the local time span as a string
-    return `${localStartTime} to ${localEndTime}`;
+  // If there's no end time, return only the start time
+  if (!endTimeUTC) {
+    return localStartTime; // Return only the local start time
   }
 
-  // Helper function to convert 12-hour format (e.g., "04:34 AM") to 24-hour format for Date parsing
-  function convertTo24HourFormat(timeString) {
-    const [time, period] = timeString.split(' ');
-    let [hours, minutes] = time.split(':').map(Number);
+  // Convert end time from UTC to the user's local time
+  const localEndTime = new Date(`1970-01-01T${convertTo24HourFormat(endTimeUTC)}Z`).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
-    if (period === 'PM' && hours < 12) {
-      hours += 12; // Convert PM times
-    } else if (period === 'AM' && hours === 12) {
-      hours = 0; // Handle midnight case
-    }
+  // Return the local time span as a string (start to end)
+  return `${localStartTime} to ${localEndTime}`;
+}
 
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+
+// Helper function to convert 12-hour format (e.g., "04:34 AM") to 24-hour format for Date parsing
+function convertTo24HourFormat(timeString) {
+  if (!timeString || !timeString.includes(' ')) {
+    console.error("Invalid time format:", timeString);
+    return "00:00:00"; // Return default value in case of invalid format
   }
+
+  const [time, period] = timeString.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+
+  if (period === 'PM' && hours < 12) {
+    hours += 12; // Convert PM times
+  } else if (period === 'AM' && hours === 12) {
+    hours = 0; // Handle midnight case
+  }
+
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+}
 
   // Convert UTC date string (e.g., "Mon, Oct 14, 2024") to local date
   function convertDateToLocal(utcDateString) {
