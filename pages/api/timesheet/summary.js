@@ -29,7 +29,7 @@ function formatTimeForDisplay(date) {
 // Helper function to get the start of today (midnight)
 function getStartOfToday() {
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Midnight of today
+  today.setUTCHours(0, 0, 0, 0); // Midnight of today
   return today;
 }
 
