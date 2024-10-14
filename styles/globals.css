@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+::-webkit-scrollbar {
+  width: 10px;
+  opacity: 0.5;
+}
+::-webkit-scrollbar-track {
+  background: var(--dark);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--dark-grey);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--grey);
+}
+input::placeholder {
+  color: var(--grey);
+}
+
+:root {
+  --background: url('../public/images/Tile\ Pattern.png'), var(--dark);
+  --foreground: #C0C0C0;
+  --transparent: #00000000;
+  --white: #FFFFFF;
+  --one-opacity-white: rgba(255, 255, 255, 0.01);
+  --ten-opacity-white: rgba(255, 255, 255, 0.1);
+  --twentyfive-opacity-white: rgba(255, 255, 255, 0.25);
+  --low-white: #ebebeb;
+  --grey-white: #C0C0C0;
+  --grey: #4E4E4E;
+  --light-dark-grey: #383838;
+  --dark-grey: #2E2E2E;
+  --dark: #191919;
+  --seventyfive-opacity-dark: rgba(25, 25, 25, 0.75);
+  --black: #000000;
+  --fifteen-opacity-black: rgba(0, 0, 0, 0.15);
+  --gradient-opacity-black: linear-gradient(0deg, #000000 15%, #66666600 100%) no-repeat;
+  --warning: #E24A4A;
+  --starred: #E2B84A;
+  --rainbow1: #ff75c3;
+  --rainbow2: #ffa647;
+  --rainbow3: #ffe83f;
+  --rainbow4: #9fff5b;
+  --rainbow5: #70e2ff;
+  --rainbow6: #cd93ff;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
