@@ -65,7 +65,6 @@ export default function Timesheet() {
       }
     },
   });
-
   // Button states based on last action
   const isTimeInDisabled = lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
   const isBreakDisabled = lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
