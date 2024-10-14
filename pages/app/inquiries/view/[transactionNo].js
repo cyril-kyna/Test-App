@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Playfair } from "next/font/google";
@@ -15,30 +15,27 @@ export default function InquiryDetails() {
   const [error, setError] = useState(null);
 
   // Fetch inquiry details using the transactionNo
-  const fetchInquiryDetails = async () => {
+  const fetchInquiryDetails = useCallback(async () => {
     try {
-      setLoading(true);  // Set loading state
+      setLoading(true);
       const response = await fetch(`/api/inquiries/view/${transactionNo}`);
-
       if (!response.ok) {
         throw new Error(`Error fetching inquiry details: ${response.status}`);
       }
-
       const data = await response.json();
-      setInquiry(data);  // Set the inquiry details data
+      setInquiry(data);
     } catch (err) {
-      setError(err.message);  // Set error state
+      setError(err.message);
     } finally {
-      setLoading(false);  // Always set loading to false after request
+      setLoading(false);
     }
-  };
+  }, [transactionNo]);
 
-  // Call the fetch function when the transactionNo is available
   useEffect(() => {
     if (transactionNo) {
       fetchInquiryDetails();
     }
-  }, [transactionNo]);
+  }, [transactionNo, fetchInquiryDetails]);
 
   // Navigate back to the inquiries list
   const handleGoBack = () => {

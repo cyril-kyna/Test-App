@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Playfair } from 'next/font/google';
 import { signIn } from 'next-auth/react'; // Import signIn for client-side
 import { useRouter } from 'next/router'; // Import router for redirection
+import Link from 'next/link';
 
 const playfair = Playfair({
   subsets: ['latin']
@@ -74,7 +75,7 @@ export default function Register() {
     <div>
       <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>Registration</h1>
       <form onSubmit={formik.handleSubmit} className="bg-[var(--dark)] min-w-[35rem] max-w-[35rem] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)] space-y-4">
-        <p className="text-center">Already have an account? <a href="/account/login" className="text-[var(--starred)] hover:underline">Login</a></p>
+        <p className="text-center">Already have an account? <Link href="/account/login" className="text-[var(--starred)] hover:underline">Login</Link></p>
 
         {/* First Name Input */}
         <div>

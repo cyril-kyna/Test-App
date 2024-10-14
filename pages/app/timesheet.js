@@ -2,7 +2,7 @@ import { useFormik } from 'formik';
 import { Button } from '@/components/ui/button';
 import { Playfair } from 'next/font/google';
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 
 const playfair = Playfair({
@@ -16,20 +16,20 @@ export default function Timesheet() {
   const [loading, setLoading] = useState(true); // Track loading state
 
   // Fetch timesheet data to determine last action
-  const fetchTimesheetData = async () => {
+  const fetchTimesheetData = useCallback(async () => {
     if (session) {
       const res = await fetch('/api/timesheet/summary');
       const data = await res.json();
-      setLastAction(data.lastAction || ''); // Get last action from the backend
-      setDailySummary(data.dailySummary || null); // Get daily summary data
-      setLoading(false); // End loading state
+      setLastAction(data.lastAction || ''); 
+      setDailySummary(data.dailySummary || null); 
+      setLoading(false); 
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     fetchTimesheetData();
-  }, [session]);
-
+  }, [session, fetchTimesheetData]);
+  
   // Form handling for timesheet actions
   const formik = useFormik({
     initialValues: {

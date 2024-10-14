@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { useFormik } from "formik";
 import { contactFormSchema } from "@/lib/validation/validation-schema";
@@ -21,7 +21,7 @@ export default function EditInquiry() {
   const [formStatus, setFormStatus] = useState(null);
 
   // Fetch inquiry details by transactionNo
-  const fetchInquiryDetails = async () => {
+  const fetchInquiryDetails = useCallback(async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/inquiries/view/${transactionNo}`);
@@ -35,13 +35,13 @@ export default function EditInquiry() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [transactionNo]);
 
   useEffect(() => {
     if (transactionNo) {
       fetchInquiryDetails();
     }
-  }, [transactionNo]);
+  }, [transactionNo, fetchInquiryDetails]);
 
   const handleGoBack = () => {
     router.push(routes.inquries);
