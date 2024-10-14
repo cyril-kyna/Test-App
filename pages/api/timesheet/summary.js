@@ -63,8 +63,8 @@ async function getTimesheetEntriesForToday(employeeId) {
     where: {
       employeeID: employeeId,
       time: {
-        gte: today, // From the start of today
-        lt: new Date(today.getTime() + 24 * 60 * 60 * 1000), // Until the end of today
+        gte: todayUTC, // From the start of today
+        lt: new Date(todayUTC.getTime() + 24 * 60 * 60 * 1000), // Until the end of today
       },
     },
     orderBy: { time: 'asc' }, // Order by time ascending
