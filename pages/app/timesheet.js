@@ -116,7 +116,7 @@ export default function Timesheet() {
             await formik.setFieldValue('action', 'TIME_IN');
             formik.submitForm();
           }}
-          disabled={!isInitialState && isTimeInDisabled} // Enable only if it's the initial state or allowed
+          disabled={!isInitialState && isTimeInDisabled}
         >
           Time In
         </Button>
@@ -129,7 +129,7 @@ export default function Timesheet() {
             await formik.setFieldValue('action', 'BREAK');
             formik.submitForm();
           }}
-          disabled={isBreakDisabled} // Disable if the last action isn't TIME_IN
+          disabled={isBreakDisabled}
         >
           Break
         </Button>
@@ -142,7 +142,7 @@ export default function Timesheet() {
             await formik.setFieldValue('action', 'TIME_OUT');
             formik.submitForm();
           }}
-          disabled={isTimeOutDisabled} // Disable if the last action is TIME_OUT or invalid
+          disabled={isTimeOutDisabled}
         >
           Time Out
         </Button>
@@ -165,7 +165,7 @@ export default function Timesheet() {
                   <TableCell>{dailySummary.fullName}</TableCell>
                   <TableCell>{dailySummary.date}</TableCell>
                   <TableCell>{dailySummary.totalTime}</TableCell>
-                  <TableCell>{dailySummary.timeSpan}</TableCell>
+                  <TableCell>{dailySummary.timeSpan}</TableCell> {/* Use timeSpan instead of separate timeIn/timeOut */}
                 </TableRow>
               ) : (
                 <TableRow>

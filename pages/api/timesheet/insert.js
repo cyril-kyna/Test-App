@@ -24,9 +24,9 @@ export default async function handler(req, res) {
       }
 
       const employeeId = employee.id;
-      const currentTime = new Date();
+      const currentTime = new Date(); // UTC by default
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Set to the start of the day
+      today.setUTCHours(0, 0, 0, 0); // Set to midnight UTC
 
       // Get the latest entry for today
       const latestEntry = await prisma.timesheet.findFirst({
@@ -42,9 +42,7 @@ export default async function handler(req, res) {
 
       let newEntry;
 
-      // Ensure only the valid action is performed based on the latest entry
       if (action === 'TIME_IN') {
-        // User can TIME_IN if there's no TIME_OUT today or the last entry is BREAK
         if (latestEntry && latestEntry.type === 'TIME_OUT') {
           return res.status(400).json({ message: 'You cannot Time In after Time Out for today' });
         }
@@ -68,7 +66,6 @@ export default async function handler(req, res) {
         });
 
       } else if (action === 'BREAK') {
-        // User can only BREAK if the last action was TIME_IN
         if (!latestEntry || latestEntry.type !== 'TIME_IN') {
           return res.status(400).json({ message: 'You must Time In before taking a Break' });
         }
@@ -84,7 +81,6 @@ export default async function handler(req, res) {
         await calculateTotalTime(employeeId, today, currentTime, 'BREAK');
 
       } else if (action === 'TIME_OUT') {
-        // Ensure TIME_OUT can only happen if TIME_IN has happened and there isn't already a TIME_OUT
         if (!latestEntry || latestEntry.type !== 'TIME_IN') {
           return res.status(400).json({ message: 'You must Time In before Time Out' });
         }

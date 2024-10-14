@@ -26,10 +26,10 @@ function formatTimeForDisplay(date) {
   });
 }
 
-// Helper function to get the start of today (midnight)
+// Helper function to get the start of today (midnight UTC)
 function getStartOfToday() {
   const today = new Date();
-  today.setUTCHours(0, 0, 0, 0); // Midnight of today
+  today.setUTCHours(0, 0, 0, 0); // Midnight UTC
   return today;
 }
 
@@ -51,7 +51,7 @@ async function getDailySummaryForToday(employeeId) {
   return prisma.dailySummary.findFirst({
     where: {
       employeeId,
-      date: today, // Filter for today's summary
+      date: today,
     },
   });
 }
@@ -63,11 +63,11 @@ async function getTimesheetEntriesForToday(employeeId) {
     where: {
       employeeID: employeeId,
       time: {
-        gte: todayUTC, // From the start of today
-        lt: new Date(todayUTC.getTime() + 24 * 60 * 60 * 1000), // Until the end of today
+        gte: todayUTC,
+        lt: new Date(todayUTC.getTime() + 24 * 60 * 60 * 1000),
       },
     },
-    orderBy: { time: 'asc' }, // Order by time ascending
+    orderBy: { time: 'asc' },
   });
 }
 
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
         dailySummary: {
           fullName,
           totalTime: '00:00:00',
-          date: formatDateForDisplay(summaryDate), // Format the date for display
+          date: formatDateForDisplay(summaryDate),
           firstEntry: null,
           lastEntry: null,
         },
@@ -131,10 +131,10 @@ export default async function handler(req, res) {
       dailySummary: {
         fullName,
         totalTime: totalTimeFormatted,
-        timeIn: formattedTimeIn, // Format timeIn for display
-        timeOut: formattedTimeOut, // Format timeOut for display
-        timeSpan: formattedTimeOut ? `${formattedTimeIn} to ${formattedTimeOut}` : formattedTimeIn, // Full time span
-        date: formatDateForDisplay(summaryDate), // Format the date for display
+        timeIn: formattedTimeIn,
+        timeOut: formattedTimeOut,
+        timeSpan: formattedTimeOut ? `${formattedTimeIn} to ${formattedTimeOut}` : formattedTimeIn,
+        date: formatDateForDisplay(summaryDate),
       },
     });
 
