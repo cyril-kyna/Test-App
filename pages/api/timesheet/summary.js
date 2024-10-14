@@ -58,7 +58,7 @@ async function getDailySummaryForToday(employeeId) {
 
 // Helper function to fetch timesheet entries for today
 async function getTimesheetEntriesForToday(employeeId) {
-  const today = getStartOfToday();
+  const todayUTC = getStartOfToday();
   return prisma.timesheet.findMany({
     where: {
       employeeID: employeeId,
