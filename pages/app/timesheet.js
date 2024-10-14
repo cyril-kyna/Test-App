@@ -128,19 +128,19 @@ export default function Timesheet() {
 
       {/* Status Message */}
       {lastAction === 'TIME_OUT' ? (
-        <p className='text-xl'>
+        <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
           You have accumulated <b>{dailySummary.totalTime}</b> total time for today.
         </p>
       ) : lastAction === 'BREAK' ? (
-        <p className='text-xl'>
+        <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
           You have accumulated <b>{dailySummary.totalTime}</b> total time so far, Ready to continue?
         </p>
       ) : lastAction === 'TIME_IN' ? (
-        <p className='text-xl'>
+        <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
           Your time is now running. Click <b>Break</b> if you want to pause, or <b>Time out</b> if you are done.
         </p>
       ) : 
-        <p className='text-xl'>
+        <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
           Click <b>Time In</b> if you want to start.
         </p>
       }
