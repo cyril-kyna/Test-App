@@ -1,3 +1,5 @@
+// pages/api/timesheet/summary.js
+
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
@@ -15,24 +17,21 @@ function formatTimeInHHMMSS(totalTimeInSeconds) {
 // Helper function to format date in a user-friendly format
 function formatDateForDisplay(date) {
   return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
 // Helper function to format time in a user-friendly format
 function formatTimeForDisplay(date) {
   return new Date(date).toLocaleTimeString('en-US', {
-    hour: '2-digit', 
+    hour: '2-digit',
     minute: '2-digit',
     timeZone: 'UTC',
   });
-}
-
-// Helper function to get the start of today (midnight UTC)
-function getStartOfToday() {
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0); // Midnight UTC
-  return today;
 }
 
 // Helper function to fetch employee details
@@ -47,30 +46,48 @@ async function getEmployeeDetails(employeeNo) {
   });
 }
 
-// Helper function to fetch daily summary for today
-async function getDailySummaryForToday(employeeId) {
-  const today = getStartOfToday();
-  return prisma.dailySummary.findFirst({
+// Helper function to fetch all daily summaries for an employee
+async function getAllDailySummaries(employeeId) {
+  return prisma.dailySummary.findMany({
     where: {
       employeeId,
-      date: today,
+    },
+    orderBy: {
+      date: 'desc',
     },
   });
 }
 
-// Helper function to fetch timesheet entries for today
-async function getTimesheetEntriesForToday(employeeId) {
-  const todayUTC = getStartOfToday();
-  return prisma.timesheet.findMany({
+// Helper function to get the start and end of the current day in UTC
+function getUTCDateRange() {
+  const now = new Date();
+  
+  // Start of today in UTC
+  const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
+  
+  // Start of tomorrow in UTC
+  const startOfTomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+  
+  return { start: startOfTodayUTC, end: startOfTomorrowUTC };
+}
+
+// Helper function to fetch the latest action for today
+async function getLastActionToday(employeeId) {
+  const { start, end } = getUTCDateRange();
+  
+  const latestTimesheetEntry = await prisma.timesheet.findFirst({
     where: {
       employeeID: employeeId,
       time: {
-        gte: todayUTC,
-        lt: new Date(todayUTC.getTime() + 24 * 60 * 60 * 1000),
+        gte: start,
+        lt: end,
       },
     },
-    orderBy: { time: 'asc' },
+    orderBy: { time: 'desc' },
+    select: { type: true },
   });
+
+  return latestTimesheetEntry ? latestTimesheetEntry.type : '';
 }
 
 // Main handler function
@@ -92,56 +109,50 @@ export default async function handler(req, res) {
     const { id: employeeId, firstName, lastName } = employee;
     const fullName = `${firstName} ${lastName}`;
 
-    // Fetch today's daily summary
-    const dailySummary = await getDailySummaryForToday(employeeId);
-    if (!dailySummary) {
-      return res.status(404).json({ message: 'No timesheet record found for today.' });
-    }
+    // Fetch all daily summaries for the employee
+    const dailySummaries = await getAllDailySummaries(employeeId);
 
-    const summaryDate = new Date(dailySummary.date);
+    // Fetch the last action for today
+    const lastAction = await getLastActionToday(employeeId);
 
-    // Fetch today's timesheet entries
-    const timesheetEntries = await getTimesheetEntriesForToday(employeeId);
-
-    if (timesheetEntries.length === 0) {
+    // If there are no daily summaries, respond accordingly
+    if (dailySummaries.length === 0) {
       return res.status(200).json({
-        lastAction: '',
-        dailySummary: {
-          fullName,
-          totalTime: '00:00:00',
-          date: formatDateForDisplay(summaryDate),
-          firstEntry: null,
-          lastEntry: null,
-        },
+        lastAction: '', // No actions recorded yet
+        dailySummaries: [],
       });
     }
 
-    // Get the first and last entry
-    const firstEntry = timesheetEntries[0];
-    const lastEntry = timesheetEntries[timesheetEntries.length - 1];
+    // Map through each daily summary to format the response
+    const formattedSummaries = dailySummaries.map((summary) => {
+      const summaryDate = new Date(summary.date);
+      const timeIn = formatTimeForDisplay(summary.createdAt);
+      const timeOut = formatTimeForDisplay(summary.updatedAt);
+      const timeSpan = timeOut ? `${timeIn} to ${timeOut}` : `${timeIn}`; // Handle cases with only TIME_IN
+      const totalTimeFormatted = formatTimeInHHMMSS(summary.totalTime);
 
-    // Format total time in HH:MM:SS
-    const totalTimeFormatted = formatTimeInHHMMSS(dailySummary.totalTime);
-
-    // Format the time span
-    const formattedTimeIn = formatTimeForDisplay(firstEntry.time);
-    const formattedTimeOut = lastEntry && lastEntry !== firstEntry ? formatTimeForDisplay(lastEntry.time) : null;
-
-    // Respond with timesheet data
-    return res.status(200).json({
-      lastAction: lastEntry.type,
-      dailySummary: {
+      return {
         fullName,
         totalTime: totalTimeFormatted,
-        timeIn: formattedTimeIn,
-        timeOut: formattedTimeOut,
-        timeSpan: formattedTimeOut ? `${formattedTimeIn} to ${formattedTimeOut}` : formattedTimeIn,
+        timeIn,
+        timeOut,
+        timeSpan,
         date: formatDateForDisplay(summaryDate),
-      },
+        createdAt: summary.createdAt, // Optional: Include raw dates if needed
+        updatedAt: summary.updatedAt, // Optional: Include raw dates if needed
+      };
+    });
+
+    // Respond with the formatted daily summaries and last action
+    return res.status(200).json({
+      lastAction,
+      dailySummaries: formattedSummaries,
     });
 
   } catch (error) {
-    console.error('Error fetching timesheet summary:', error);
+    console.error('Error fetching timesheet summaries:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
+  } finally {
+    await prisma.$disconnect();
   }
 }

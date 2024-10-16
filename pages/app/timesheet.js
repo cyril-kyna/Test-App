@@ -12,20 +12,29 @@ const playfair = Playfair({
 export default function Timesheet() {
   const { data: session, status } = useSession();
   const [lastAction, setLastAction] = useState(''); // Store last action (TIME_IN, BREAK, TIME_OUT)
-  const [dailySummary, setDailySummary] = useState(null); // Store daily summary data
+  const [dailySummaries, setDailySummaries] = useState([]); // Store array of daily summaries
   const [loading, setLoading] = useState(true); // Track loading state
   // Individual loading states for each button
   const [isTimeInLoading, setIsTimeInLoading] = useState(false);
   const [isBreakLoading, setIsBreakLoading] = useState(false);
   const [isTimeOutLoading, setIsTimeOutLoading] = useState(false);
-  // Fetch timesheet data to determine last action
+
+  // Fetch timesheet data to determine last action and daily summaries
   const fetchTimesheetData = useCallback(async () => {
     if (session) {
-      const res = await fetch('/api/timesheet/summary');
-      const data = await res.json();
-      setLastAction(data.lastAction || ''); 
-      setDailySummary(data.dailySummary || null); 
-      setLoading(false); 
+      try {
+        const res = await fetch('/api/timesheet/summary');
+        if (!res.ok) {
+          throw new Error('Failed to fetch timesheet summary');
+        }
+        const data = await res.json();
+        setLastAction(data.lastAction || ''); 
+        setDailySummaries(data.dailySummaries || []); 
+      } catch (error) {
+        console.error('Error fetching timesheet data:', error);
+      } finally {
+        setLoading(false); 
+      }
     }
   }, [session]);
 
@@ -33,51 +42,66 @@ export default function Timesheet() {
     fetchTimesheetData();
   }, [session, fetchTimesheetData]);
 
-// Convert UTC time span string (e.g., "04:34 AM to 04:35 AM") to local time
-function convertTimeSpanToLocal(timeSpan) {
-  // Split the timeSpan into two parts (start and end times)
-  const [startTimeUTC, endTimeUTC] = timeSpan.split(' to ');
+  // Convert UTC time span string (e.g., "04:34 AM to 04:35 AM" or "04:34 AM") to local time
+  function convertTimeSpanToLocal(timeSpan) {
+    if (!timeSpan) return '';
 
-  // Convert start time from UTC to the user's local time
-  const localStartTime = new Date(`1970-01-01T${convertTo24HourFormat(startTimeUTC)}Z`).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+    // Check if the timeSpan includes ' to ' indicating a range
+    if (timeSpan.includes(' to ')) {
+      const [startTimeUTC, endTimeUTC] = timeSpan.split(' to ').map(time => time.trim());
 
-  // If there's no end time, return only the start time
-  if (!endTimeUTC) {
-    return localStartTime; // Return only the local start time
+      // If start and end times are the same, return only one time
+      if (startTimeUTC === endTimeUTC) {
+        const localTime = new Date(`1970-01-01T${convertTo24HourFormat(startTimeUTC)}Z`).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+        return localTime;
+      }
+
+      // Convert start time from UTC to the user's local time
+      const localStartTime = new Date(`1970-01-01T${convertTo24HourFormat(startTimeUTC)}Z`).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      // Convert end time from UTC to the user's local time
+      const localEndTime = new Date(`1970-01-01T${convertTo24HourFormat(endTimeUTC)}Z`).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      // Return the local time span as a string (start to end)
+      return `${localStartTime} to ${localEndTime}`;
+    } else {
+      // Only one time present, convert and return it
+      const localTime = new Date(`1970-01-01T${convertTo24HourFormat(timeSpan)}Z`).toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      return localTime;
+    }
   }
 
-  // Convert end time from UTC to the user's local time
-  const localEndTime = new Date(`1970-01-01T${convertTo24HourFormat(endTimeUTC)}Z`).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  // Helper function to convert 12-hour format (e.g., "04:34 AM") to 24-hour format for Date parsing
+  function convertTo24HourFormat(timeString) {
+    if (!timeString || !timeString.includes(' ')) {
+      console.error("Invalid time format:", timeString);
+      return "00:00:00"; // Return default value in case of invalid format
+    }
 
-  // Return the local time span as a string (start to end)
-  return `${localStartTime} to ${localEndTime}`;
-}
+    const [time, period] = timeString.split(' ');
+    let [hours, minutes] = time.split(':').map(Number);
 
+    if (period === 'PM' && hours < 12) {
+      hours += 12; // Convert PM times
+    } else if (period === 'AM' && hours === 12) {
+      hours = 0; // Handle midnight case
+    }
 
-// Helper function to convert 12-hour format (e.g., "04:34 AM") to 24-hour format for Date parsing
-function convertTo24HourFormat(timeString) {
-  if (!timeString || !timeString.includes(' ')) {
-    console.error("Invalid time format:", timeString);
-    return "00:00:00"; // Return default value in case of invalid format
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
   }
-
-  const [time, period] = timeString.split(' ');
-  let [hours, minutes] = time.split(':').map(Number);
-
-  if (period === 'PM' && hours < 12) {
-    hours += 12; // Convert PM times
-  } else if (period === 'AM' && hours === 12) {
-    hours = 0; // Handle midnight case
-  }
-
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-}
 
   // Convert UTC date string (e.g., "Mon, Oct 14, 2024") to local date
   function convertDateToLocal(utcDateString) {
@@ -114,7 +138,7 @@ function convertTo24HourFormat(timeString) {
           return;
         }
 
-        // Refetch the timesheet data to update lastAction and daily summary (including total time)
+        // Refetch the timesheet data to update lastAction and daily summaries (including total time)
         await fetchTimesheetData();
       } 
       catch (error) {
@@ -144,11 +168,11 @@ function convertTo24HourFormat(timeString) {
       {/* Status Message */}
       {lastAction === 'TIME_OUT' ? (
         <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
-          You have accumulated <b>{dailySummary.totalTime}</b> total time for today.
+          You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time for today.
         </p>
       ) : lastAction === 'BREAK' ? (
         <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
-          You have accumulated <b>{dailySummary.totalTime}</b> total time so far, Ready to continue?
+          You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time so far, Ready to continue?
         </p>
       ) : lastAction === 'TIME_IN' ? (
         <p className='text-xl bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent'>
@@ -211,7 +235,7 @@ function convertTo24HourFormat(timeString) {
         </Button>
       </form>
 
-      {/* Daily Summary Table */}
+      {/* Daily Summaries Table */}
       <div className='flex flex-col gap-3 mt-10'>
         <h1 className={`${playfair.className} ml-5 text-[var(--white)] text-[1.5rem] font-[900] uppercase`}>Summary:</h1>
         <div className="container mb-10 bg-[var(--dark)] p-5 border-[var(--ten-opacity-white)] rounded-ss-xl rounded-ee-xl border-[1px]">
@@ -223,13 +247,15 @@ function convertTo24HourFormat(timeString) {
               <TableHead>Time Span</TableHead>
             </TableRow>
             <TableBody>
-              {dailySummary ? (
-                <TableRow>
-                  <TableCell>{dailySummary.fullName}</TableCell>
-                  <TableCell>{convertDateToLocal(dailySummary.date)}</TableCell> {/* Convert date to local time */}
-                  <TableCell>{dailySummary.totalTime}</TableCell>
-                  <TableCell>{convertTimeSpanToLocal(dailySummary.timeSpan)}</TableCell> {/* Convert time span to local time */}
-                </TableRow>
+              {dailySummaries.length > 0 ? (
+                dailySummaries.map((summary, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{summary.fullName}</TableCell>
+                    <TableCell>{convertDateToLocal(summary.date)}</TableCell> {/* Convert date to local time */}
+                    <TableCell>{summary.totalTime}</TableCell>
+                    <TableCell>{convertTimeSpanToLocal(summary.timeSpan)}</TableCell> {/* Convert time span to local time */}
+                  </TableRow>
+                ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center pt-10 pb-5">
