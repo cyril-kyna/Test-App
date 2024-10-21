@@ -43,6 +43,7 @@ const Navbar = () => {
         <>
           <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.timesheet}>Timesheet</Link>
           <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.inquries}>Inquiries</Link>
+          <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.employee}>Employee</Link>
           <button
             onClick={() => signOut({ callbackUrl: routes.home })}
             className="px-6 py-2 rounded bg-[var(--white)] hover:bg-[var(--grey-white)] text-[var(--dark)] duration-300 ease-in-out"
