@@ -30,6 +30,7 @@ model Employee {
   employeeNo    String         @unique
   Timesheets    Timesheet[]    // One-to-many relation with Timesheet
   DailySummaries DailySummary[] // One-to-many relation with DailySummary
+  PaymentRecords PaymentRecord[] // One-to-many relation with PaymentRecord
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -68,6 +69,19 @@ model DailySummary {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   @@unique([employeeId, date]) 
+}
+
+model PaymentRecord {
+  id            Int      @id @default(autoincrement())
+  employeeId    Int      // Foreign key to Employee
+  date          DateTime // Start date of the payment period (e.g., Daily)
+  payAmount     Float    // Total calculated pay for that period
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  employee      Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([employeeId, date]) // Ensure one record per employee per day
 }
 
 

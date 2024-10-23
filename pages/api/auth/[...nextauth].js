@@ -16,10 +16,17 @@ export const authOptions = {
       authorize: async (credentials) => {
         const user = await prisma.user.findUnique({
           where: { username: credentials.username },
+          include: {
+            employee: true, // Include employee details (firstName, lastName)
+          }
         });
 
         if (user && await bcrypt.compare(credentials.password, user.password)) {
-          return user;  // Return user object on success
+          return {
+            ...user,
+            firstName: user.employee.firstName, // Add firstName from employee data
+            lastName: user.employee.lastName,   // Add lastName from employee data
+          };
         }
         return null;  // Return null if login fails
       }
@@ -36,7 +43,9 @@ export const authOptions = {
       if (user) {
         token.id = user.id;
         token.username = user.username;
-        token.employeeID = user.employeeID;  // Add employeeID to the token
+        token.employeeID = user.employeeID;
+        token.firstName = user.firstName;  // Add firstName to the token
+        token.lastName = user.lastName;    // Add lastName to the token
       }
       return token;
     },
@@ -45,7 +54,9 @@ export const authOptions = {
       if (token) {
         session.user.id = token.id;
         session.user.username = token.username;
-        session.user.employeeID = token.employeeID;  // Include employeeID in the session
+        session.user.employeeID = token.employeeID;
+        session.user.firstName = token.firstName; 
+        session.user.lastName = token.lastName;  
       }
       return session;
     }
