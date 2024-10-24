@@ -25,7 +25,7 @@ export default function Employee() {
     setIsSubmitting(true);
     try {
       // Log the exact JSON being sent
-      console.log("Request JSON: ", JSON.stringify(values, null, 2));  // Added console log
+      console.log("Request JSON: ", JSON.stringify(values, null, 2));
 
       const response = await fetch('/api/payrate/calculate-payrate', {
         method: 'POST',

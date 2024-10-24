@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/pages/api/auth/[...nextauth]';
 
 const prisma = new PrismaClient();
 
@@ -118,14 +119,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const session = await getServerSession(req, res);
-    if (!session) {
-      return res.status(401).json({ message: 'Unauthorized' });
-    }
-
+    const session = await getServerSession(req, res, authOptions);
+    const employeeNo = session?.user.employeeID;
+    const employee = await prisma.employee.findUnique({
+      where: { employeeNo },
+    });
+    
     const { filter } = req.query;
-    const employeeId = session.user.employeeId;
-
+    const employeeId = employee.id;
+    
     // Fetch payment records for the employee
     const paymentRecords = await prisma.paymentRecord.findMany({
       where: {
