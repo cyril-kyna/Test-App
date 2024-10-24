@@ -96,7 +96,7 @@ export default function Employee() {
             onSubmit={handleSubmit}
           >
             {({ handleSubmit, setFieldValue, values }) => (
-              <Form onSubmit={handleSubmit} className="flex flex-col gap-7 bg-[var(--dark)] min-w-[35rem] max-w-[35rem] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)] space-y-4">
+              <Form onSubmit={handleSubmit} className="flex flex-col gap-7 bg-background min-w-[35rem] max-w-[35rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
                 <div className="flex flex-col gap-5">
                   {/* Pay Rate */}
                   <div className="flex flex-col gap-1">
@@ -109,7 +109,6 @@ export default function Employee() {
                       name="payRate"
                       type="number"
                       placeholder="Enter a Pay Rate"
-                      className="rounded border-zinc-400 focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
                       value={values.payRate}
                       onChange={(e) => setFieldValue('payRate', Number(e.target.value))} // Ensure numeric value
                     />
@@ -124,10 +123,10 @@ export default function Employee() {
                       value={values.payRateSchedule}
                       onValueChange={(value) => setFieldValue('payRateSchedule', value)}
                     >
-                      <SelectTrigger className="rounded">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select Rate Schedule" />
                       </SelectTrigger>
-                      <SelectContent className="bg-[var(--dark)] rounded">
+                      <SelectContent>
                         <SelectItem value="Hourly">Hourly</SelectItem>
                         <SelectItem value="Daily">Daily</SelectItem>
                       </SelectContent>
@@ -147,7 +146,6 @@ export default function Employee() {
                 </div>
                 {/* Submit Button */}
                 <Button 
-                  className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded" 
                   type="submit" 
                   disabled={isSubmitting}
                 >
@@ -162,14 +160,14 @@ export default function Employee() {
             <h1 className={`${playfair.className} text-[var(--grey-white)] text-left text-[1.5rem] font-[700] text-balance uppercase`}>Payment Records</h1>
             <Popover>
             <PopoverTrigger asChild>
-              <Button className="flex flex-row gap-2 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded">
+              <Button>
                 <p>Filter by:</p>
-                <FilterIcon color="grey" width={20} height={20} />
+                <FilterIcon color="black" width={20} height={20} />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="flex flex-col gap-1 p-4 rounded bg-[var(--dark)] border-[var(--ten-opacity-white)] shadow-black shadow-sm">
+            <PopoverContent className="flex flex-col gap-2">
               <Button
-                className="bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+              
                 onClick={() => {
                   setFilter('daily');
                 }}
@@ -177,7 +175,7 @@ export default function Employee() {
                 Daily
               </Button>
               <Button
-                className="bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+              
                 onClick={() => {
                   setFilter('weekly');
                 }}
@@ -185,7 +183,7 @@ export default function Employee() {
                 Weekly
               </Button>
               <Button
-                className="bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+              
                 onClick={() => {
                   setFilter('monthly');
                 }}
@@ -195,7 +193,7 @@ export default function Employee() {
             </PopoverContent>
           </Popover>
           </div>
-          <div className="flex bg-[var(--dark)] rounded-ss-xl rounded-ee-xl p-5 border-[1px] border-[var(--ten-opacity-white)]">
+          <div className="flex flex-col gap-7 bg-background min-w-[35rem] max-w-[35rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
           <Table>
             <TableHeader>
               <TableRow>

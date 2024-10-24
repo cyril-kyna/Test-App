@@ -61,7 +61,7 @@ export default function Inquiries() {
       <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
         Inquiries
       </h1>
-      <div className="container my-10 bg-[var(--dark)] p-5 border-[var(--twentyfive-opacity-white)] rounded-ss-xl rounded-ee-xl border-[1px]">
+      <div className="container my-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
         <Table>
           <TableHeader>
             <TableRow>
@@ -95,13 +95,11 @@ export default function Inquiries() {
                 <TableCell>{new Date(inquiry.modified).toLocaleString()}</TableCell>
                 <TableCell className="flex flex-col gap-2">
                   <Button
-                    className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
                     onClick={() => handleViewDetails(inquiry.transactionNo)}
                   >
                     View Details
                   </Button>
                   <Button
-                    className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
                     onClick={() => handleEditInquiry(inquiry.transactionNo)}
                   >
                     Edit

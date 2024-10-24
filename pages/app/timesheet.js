@@ -187,12 +187,11 @@ export default function Timesheet() {
       {/* Time In/Out/Break Form */}
       <form
         onSubmit={formik.handleSubmit}
-        className="flex flex-row justify-center gap-5 bg-[var(--dark)] w-fit p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)]"
+        className="flex flex-row justify-center gap-5 bg-background w-fit p-10 rounded-xl border-[1px] border-zinc-700"
       >
         <Button
-          variant="default"
           type="button"
-          className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+          className="min-w-28"
           onClick={async () => {
             setIsTimeInLoading(true); // Set loading state
             await formik.setFieldValue('action', 'TIME_IN');
@@ -205,9 +204,8 @@ export default function Timesheet() {
         </Button>
 
         <Button
-          variant="default"
           type="button"
-          className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+          className="min-w-28"
           onClick={async () => {
             setIsBreakLoading(true); // Set loading state
             await formik.setFieldValue('action', 'BREAK');
@@ -220,9 +218,8 @@ export default function Timesheet() {
         </Button>
 
         <Button
-          variant="default"
           type="button"
-          className="min-w-28 bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"
+          className="min-w-28"
           onClick={async () => {
             setIsTimeOutLoading(true); // Set loading state
             await formik.setFieldValue('action', 'TIME_OUT');
@@ -238,7 +235,7 @@ export default function Timesheet() {
       {/* Daily Summaries Table */}
       <div className='flex flex-col gap-3 mt-10'>
         <h1 className={`${playfair.className} ml-5 text-[var(--white)] text-[1.5rem] font-[900] uppercase`}>Summary:</h1>
-        <div className="container mb-10 bg-[var(--dark)] p-5 border-[var(--ten-opacity-white)] rounded-ss-xl rounded-ee-xl border-[1px]">
+        <div className="container mb-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
           <Table className="min-w-[50rem]">
             <TableRow>
               <TableHead>Employee Name</TableHead>

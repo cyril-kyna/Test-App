@@ -96,8 +96,8 @@ export default function EditInquiry() {
     <div>
       <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>Edit Inquiry</h1>
       <div className="mt-5 flex flex-col items-end gap-3">
-        <Button className="bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded" onClick={handleGoBack}>← Back to Inquiries</Button>
-        <form onSubmit={formik.handleSubmit} className="bg-[var(--dark)] min-w-[35rem] max-w-[35rem] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)] space-y-4">
+        <Button onClick={handleGoBack}>← Back to Inquiries</Button>
+        <form onSubmit={formik.handleSubmit} className="flex flex-col min-w-[50rem] gap-3 bg-background p-10 rounded-xl border-[1px] border-zinc-700">
           {/* Form Inputs */}
           <div>
             <Input
@@ -108,7 +108,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.firstName}
               placeholder="First Name"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.firstName && formik.errors.firstName && (
               <p className="text-red-500">{formik.errors.firstName}</p>
@@ -123,7 +122,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.lastName}
               placeholder="Last Name"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.lastName && formik.errors.lastName && (
               <p className="text-red-500">{formik.errors.lastName}</p>
@@ -139,7 +137,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.contactNo}
               placeholder="Contact Number"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.contactNo && formik.errors.contactNo && (
               <p className="text-red-500">{formik.errors.contactNo}</p>
@@ -154,7 +151,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.emailAddress}
               placeholder="Email Address"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.emailAddress && formik.errors.emailAddress && (
               <p className="text-red-500">{formik.errors.emailAddress}</p>
@@ -169,7 +165,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.subject}
               placeholder="Subject"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.subject && formik.errors.subject && (
               <p className="text-red-500">{formik.errors.subject}</p>
@@ -183,7 +178,6 @@ export default function EditInquiry() {
               onBlur={formik.handleBlur}
               value={formik.values.message}
               placeholder="Your message"
-              className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
             />
             {formik.touched.message && formik.errors.message && (
               <p className="text-red-500">{formik.errors.message}</p>
@@ -191,11 +185,11 @@ export default function EditInquiry() {
           </div>
           <div>
             <Select onValueChange={(value) => formik.setFieldValue("status", value)} value={formik.values.status}>
-              <SelectTrigger className="rounded">
+              <SelectTrigger>
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
-              <SelectContent className="bg-[var(--dark)] rounded">
-                <SelectItem className="hover:bg-[var(--dark-grey)]" value="Pending">Pending</SelectItem>
+              <SelectContent>
+                <SelectItem value="Pending">Pending</SelectItem>
                 <SelectItem value="Read">Read</SelectItem>
               </SelectContent>
             </Select>
@@ -203,7 +197,7 @@ export default function EditInquiry() {
               <p className="text-red-500">{formik.errors.status}</p>
             )}
           </div>
-          <Button className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded" type="submit" disabled={formik.isSubmitting}>Update Inquiry</Button>
+          <Button className="w-full" type="submit" disabled={formik.isSubmitting}>Update Inquiry</Button>
           {formStatus && <p className="text-center">{formStatus}</p>}
         </form>
       </div>

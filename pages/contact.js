@@ -48,9 +48,9 @@ export default function Contact() {
   });
 
   return (
-    <div>
+    <div className='mb-40'>
       <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>Contact</h1>
-      <form onSubmit={formik.handleSubmit} className="bg-[var(--dark)] min-w-[35rem] max-w-[35rem] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)] space-y-4">
+      <form onSubmit={formik.handleSubmit} className="bg-background min-w-[35rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
         <p className="text-center">Leave us a message, If you have any inquiry.</p>
         {/* Form Inputs */}
         <div>
@@ -62,7 +62,6 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.firstName}
             placeholder="First Name"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.firstName && formik.errors.firstName && (
             <p className="text-red-500">{formik.errors.firstName}</p>
@@ -77,7 +76,6 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.lastName}
             placeholder="Last Name"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.lastName && formik.errors.lastName && (
             <p className="text-red-500">{formik.errors.lastName}</p>
@@ -93,7 +91,6 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.contactNo}
             placeholder="Contact Number"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.contactNo && formik.errors.contactNo && (
             <p className="text-red-500">{formik.errors.contactNo}</p>
@@ -108,7 +105,6 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.emailAddress}
             placeholder="Email Address"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.emailAddress && formik.errors.emailAddress && (
             <p className="text-red-500">{formik.errors.emailAddress}</p>
@@ -123,7 +119,6 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.subject}
             placeholder="Subject"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.subject && formik.errors.subject && (
             <p className="text-red-500">{formik.errors.subject}</p>
@@ -137,13 +132,12 @@ export default function Contact() {
             onBlur={formik.handleBlur}
             value={formik.values.message}
             placeholder="Your message"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.message && formik.errors.message && (
             <p className="text-red-500">{formik.errors.message}</p>
           )}
         </div>
-        <Button className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded" type="submit" disabled={formik.isSubmitting}>Submit</Button>
+        <Button className="w-full" type="submit" disabled={formik.isSubmitting}>Submit</Button>
         {formStatus && <p className='text-center'>{formStatus}</p>}
       </form>
     </div>

@@ -7,7 +7,7 @@ import { SessionProvider} from "next-auth/react";
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   return (
     <SessionProvider session={session}>
-      <main className={`${GeistSans.className} mx-24 flex flex-col justify-center items-center`}>
+      <main className={`${GeistSans.className} dark mx-24 flex flex-col justify-center items-center`}>
         <Head>
           <title>Test</title> 
         </Head>

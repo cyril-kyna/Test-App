@@ -17,15 +17,15 @@ export default function Home() {
           <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
             Welcome,
             <br></br> 
-            <p className="bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent">
+            <p className="text-white">
               {session.user.username}!
             </p>
           </h1>
       ) : (
-          <h2 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
+          <h2 className={`${playfair.className} mt-40 text-center text-[5rem] font-[900] uppercase`}>
             Welcome,
             <br></br> 
-            <p className="bg-[linear-gradient(90deg,_var(--rainbow1)_0%,_var(--rainbow2)_20%,_var(--rainbow3)_40%,_var(--rainbow4)_60%,_var(--rainbow5)_80%,_var(--rainbow6)_100%)] bg-clip-text text-transparent">
+            <p className="text-white">
               Random User
             </p>
           </h2>

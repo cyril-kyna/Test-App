@@ -59,9 +59,9 @@ export default function InquiryDetails() {
         Inquiry Details
       </h1>
       <div className="mt-5 flex flex-col items-end gap-3">
-        <Button className="bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded"  onClick={handleGoBack}>← Back to Inquiries</Button>
+        <Button onClick={handleGoBack}>← Back to Inquiries</Button>
         {inquiry && (
-          <div className="flex flex-col min-w-[50rem] max-w-[50rem] gap-3 bg-[var(--dark)] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)]">
+          <div className="flex flex-col min-w-[50rem] gap-3 bg-background p-10 rounded-xl border-[1px] border-zinc-700">
             <h1><strong>Transaction No:</strong> {inquiry.transactionNo}</h1>
             <p><strong>First Name:</strong> {inquiry.firstName}</p>
             <p><strong>Last Name:</strong> {inquiry.lastName}</p>

@@ -26,7 +26,7 @@ const Navbar = () => {
   return (
     <motion.nav
       animate={{
-        backgroundColor: scrolled ? 'var(--dark-grey)' : 'var(--transparent)',
+        backgroundColor: scrolled ? 'var(--background)' : 'var(--transparent)',
         marginTop: scrolled ? 8 : 5,
       }}
       transition={{
@@ -36,17 +36,17 @@ const Navbar = () => {
       }}
       className="fixed top-0 flex flex-row justify-center rounded gap-4 mt-4 px-4 py-2 z-10 font-semibold max-w-full"
     >
-      <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.home}>Home</Link>
-      <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.about}>About</Link>
-      <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.contact}>Contact</Link>
+      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.home}>Home</Link>
+      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.about}>About</Link>
+      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.contact}>Contact</Link>
       {session ? (
         <>
-          <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.timesheet}>Timesheet</Link>
-          <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.inquries}>Inquiries</Link>
-          <Link className="px-6 py-2 rounded hover:bg-[--grey] hover:text-[var(--white)] duration-300 ease-in-out" href={routes.employee}>Employee</Link>
+          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.timesheet}>Timesheet</Link>
+          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.inquries}>Inquiries</Link>
+          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.employee}>Employee</Link>
           <button
             onClick={() => signOut({ callbackUrl: routes.home })}
-            className="px-6 py-2 rounded bg-[var(--white)] hover:bg-[var(--grey-white)] text-[var(--dark)] duration-300 ease-in-out"
+            className="px-6 py-2 rounded bg-white hover:bg-zinc-400 text-zinc-800 duration-300 ease-in-out"
           >
             Logout
           </button>
