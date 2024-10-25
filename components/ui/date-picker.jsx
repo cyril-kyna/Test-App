@@ -29,7 +29,7 @@ export function DatePicker({ date, onChange }) {   // Accept date and onChange f
           {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="dark w-auto p-0">
+      <PopoverContent className="w-auto p-0">
         <Calendar
           mode="single"
           selected={date}        // Pass the date from Formik here

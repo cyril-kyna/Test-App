@@ -165,7 +165,7 @@ export default function Employee() {
                 <FilterIcon color="black" width={20} height={20} />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="flex flex-col gap-2 dark">
+            <PopoverContent className="flex flex-col gap-2">
               <Button
               
                 onClick={() => {
