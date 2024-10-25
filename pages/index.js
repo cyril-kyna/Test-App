@@ -14,10 +14,10 @@ export default function Home() {
   return (
     <div>
       {session ? (
-          <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
+          <h1 className={`${playfair.className} mt-40 text-center text-[5rem] font-[900] uppercase`}>
             Welcome,
             <br></br> 
-            <p className="text-white">
+            <p>
               {session.user.username}!
             </p>
           </h1>
