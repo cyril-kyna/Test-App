@@ -2,7 +2,10 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import routes from '@/routes';
+import { Button } from '@/components/ui/button';
 import { useSession, signOut } from "next-auth/react";
+import { buttonVariants } from "@/components/ui/button"
+import { ModeToggle } from "@/components/ui/mode-toggle";
 
 const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -36,24 +39,24 @@ const Navbar = () => {
       }}
       className="fixed top-0 flex flex-row justify-center rounded gap-4 mt-4 px-4 py-2 z-10 font-semibold max-w-full"
     >
-      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.home}>Home</Link>
-      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.about}>About</Link>
-      <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.contact}>Contact</Link>
+      <Link className={buttonVariants({ variant: "ghost" })} href={routes.home}>Home</Link>
+      <Link className={buttonVariants({ variant: "ghost" })} href={routes.about}>About</Link>
+      <Link className={buttonVariants({ variant: "ghost" })} href={routes.contact}>Contact</Link>
       {session ? (
         <>
-          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.timesheet}>Timesheet</Link>
-          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.inquries}>Inquiries</Link>
-          <Link className="px-6 py-2 rounded hover:bg-zinc-700 hover:text-white duration-300 ease-in-out" href={routes.employee}>Employee</Link>
-          <button
+          <Link className={buttonVariants({ variant: "ghost" })} href={routes.timesheet}>Timesheet</Link>
+          <Link className={buttonVariants({ variant: "ghost" })} href={routes.inquries}>Inquiries</Link>
+          <Link className={buttonVariants({ variant: "ghost" })} href={routes.employee}>Employee</Link>
+          <Button
             onClick={() => signOut({ callbackUrl: routes.home })}
-            className="px-6 py-2 rounded bg-white hover:bg-zinc-400 text-zinc-800 duration-300 ease-in-out"
-          >
+            >
             Logout
-          </button>
+          </Button>
         </>
       ) : (
-        <Link className="px-6 py-2 rounded bg-[var(--white)] hover:bg-[var(--grey-white)] text-[var(--dark)] duration-300 ease-in-out" href={routes.login}>Login</Link>
+        <Link className={buttonVariants({ variant: "ghost" })} href={routes.login}>Login</Link>
       )}
+      <ModeToggle/>
     </motion.nav>
   );
 };

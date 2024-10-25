@@ -8,6 +8,7 @@ import { Playfair } from 'next/font/google';
 import { signIn } from 'next-auth/react'; // Import signIn for client-side
 import { useRouter } from 'next/router'; // Import router for redirection
 import Link from 'next/link';
+import { buttonVariants } from "@/components/ui/button"
 
 const playfair = Playfair({
   subsets: ['latin']
@@ -74,8 +75,8 @@ export default function Register() {
   return (
     <div>
       <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>Registration</h1>
-      <form onSubmit={formik.handleSubmit} className="bg-[var(--dark)] min-w-[35rem] max-w-[35rem] p-10 rounded-ss-xl rounded-ee-xl border-[1px] border-[var(--ten-opacity-white)] space-y-4">
-        <p className="text-center">Already have an account? <Link href="/account/login" className="text-[var(--starred)] hover:underline">Login</Link></p>
+      <form onSubmit={formik.handleSubmit} className="bg-background min-w-[35rem] p-10 rounded-ss-xl rounded-xl border-[1px] border-zinc-700 space-y-4">
+        <p className="text-center text-sm">Already have an account? <Link href="/account/login" className={buttonVariants({ variant: "link" })}>Login</Link></p>
 
         {/* First Name Input */}
         <div>
@@ -87,7 +88,6 @@ export default function Register() {
             onBlur={formik.handleBlur}
             value={formik.values.firstName}
             placeholder="First Name"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.firstName && formik.errors.firstName && (
             <p className="text-red-500">{formik.errors.firstName}</p>
@@ -104,7 +104,6 @@ export default function Register() {
             onBlur={formik.handleBlur}
             value={formik.values.lastName}
             placeholder="Last Name"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.lastName && formik.errors.lastName && (
             <p className="text-red-500">{formik.errors.lastName}</p>
@@ -114,12 +113,12 @@ export default function Register() {
         {/* Gender Select Input */}
         <div>
           <Select onValueChange={(value) => formik.setFieldValue("gender", value)} value={formik.values.gender}>
-            <SelectTrigger className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]">
+            <SelectTrigger>
               <SelectValue placeholder="Select Gender" />
             </SelectTrigger>
-            <SelectContent className="bg-[var(--dark)] rounded">
-              <SelectItem className="hover:bg-[var(--dark-grey)]" value="MALE">Male</SelectItem>
-              <SelectItem className="hover:bg-[var(--dark-grey)]" value="FEMALE">Female</SelectItem>
+            <SelectContent>
+              <SelectItem value="MALE">Male</SelectItem>
+              <SelectItem value="FEMALE">Female</SelectItem>
             </SelectContent>
           </Select>
           {formik.touched.gender && formik.errors.gender && (
@@ -137,7 +136,6 @@ export default function Register() {
             onBlur={formik.handleBlur}
             value={formik.values.username}
             placeholder="Username"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.username && formik.errors.username && (
             <p className="text-red-500">{formik.errors.username}</p>
@@ -154,14 +152,13 @@ export default function Register() {
             onBlur={formik.handleBlur}
             value={formik.values.password}
             placeholder="Password"
-            className="rounded focus-visible:ring-2 focus-visible:ring-[var(--twentyfive-opacity-white)]"
           />
           {formik.touched.password && formik.errors.password && (
             <p className="text-red-500">{formik.errors.password}</p>
           )}
         </div>
 
-        <Button className="w-full bg-[var(--dark-grey)] hover:bg-[--light-dark-grey] rounded" type="submit" disabled={formik.isSubmitting}>Register</Button>
+        <Button className="w-full" type="submit" disabled={formik.isSubmitting}>Register</Button>
 
         {formStatus && <p className='text-center'>{formStatus}</p>}
       </form>
