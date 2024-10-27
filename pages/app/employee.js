@@ -108,7 +108,7 @@ export default function Employee() {
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <p className="text-white text-2xl font-bold">Loading Employee's Payrate...</p>
+        <p className="text-white text-2xl font-bold">Loading Employee&apos;s Payrate...</p>
       </div>
     );
   }
