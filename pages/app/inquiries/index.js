@@ -2,10 +2,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Playfair } from "next/font/google";
 import routes from '@/routes';
 
-const playfair = Playfair({ subsets: ["latin"] });
 
 export default function Inquiries() {
   const [inquiries, setInquiries] = useState([]);
@@ -58,7 +56,7 @@ export default function Inquiries() {
 
   return (
     <div>
-      <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
+      <h1 className="mt-40 text-center text-[5rem] font-[900] uppercase">
         Inquiries
       </h1>
       <div className="container my-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
@@ -80,33 +78,41 @@ export default function Inquiries() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inquiries.map((inquiry) => (
-              <TableRow key={inquiry.transactionNo}>
-                <TableCell>{inquiry.id}</TableCell>
-                <TableCell>{inquiry.firstName}</TableCell>
-                <TableCell>{inquiry.lastName}</TableCell>
-                <TableCell>{inquiry.contactNo}</TableCell>
-                <TableCell>{inquiry.emailAddress}</TableCell>
-                <TableCell>{inquiry.subject}</TableCell>
-                <TableCell>{inquiry.message.length > 100 ? inquiry.message.substr(0, 100) + '...' : inquiry.message}</TableCell>
-                <TableCell>{inquiry.status}</TableCell>
-                <TableCell>{inquiry.transactionNo}</TableCell>
-                <TableCell>{new Date(inquiry.created).toLocaleString()}</TableCell>
-                <TableCell>{new Date(inquiry.modified).toLocaleString()}</TableCell>
-                <TableCell className="flex flex-col gap-2">
-                  <Button
-                    onClick={() => handleViewDetails(inquiry.transactionNo)}
-                  >
-                    View Details
-                  </Button>
-                  <Button
-                    onClick={() => handleEditInquiry(inquiry.transactionNo)}
-                  >
-                    Edit
-                  </Button>
+            {inquiries.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={12} className="text-center py-10">
+                  No Inquiries found
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              inquiries.map((inquiry) => (
+                <TableRow key={inquiry.transactionNo}>
+                  <TableCell>{inquiry.id}</TableCell>
+                  <TableCell>{inquiry.firstName}</TableCell>
+                  <TableCell>{inquiry.lastName}</TableCell>
+                  <TableCell>{inquiry.contactNo}</TableCell>
+                  <TableCell>{inquiry.emailAddress}</TableCell>
+                  <TableCell>{inquiry.subject}</TableCell>
+                  <TableCell>
+                    {inquiry.message.length > 100
+                      ? inquiry.message.substr(0, 100) + '...'
+                      : inquiry.message}
+                  </TableCell>
+                  <TableCell>{inquiry.status}</TableCell>
+                  <TableCell>{inquiry.transactionNo}</TableCell>
+                  <TableCell>{new Date(inquiry.created).toLocaleString()}</TableCell>
+                  <TableCell>{new Date(inquiry.modified).toLocaleString()}</TableCell>
+                  <TableCell className="flex flex-col gap-2">
+                    <Button onClick={() => handleViewDetails(inquiry.transactionNo)}>
+                      View Details
+                    </Button>
+                    <Button onClick={() => handleEditInquiry(inquiry.transactionNo)}>
+                      Edit
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </div>

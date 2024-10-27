@@ -6,7 +6,7 @@ const routes = {
     login: '/account/login',
     register: '/account/register',
     timesheet: '/app/timesheet',
-    inquries: '/app/inquiries',
+    inquiries: '/app/inquiries',
     employee: '/app/employee',
     editInquries: '/app/inquiries/edit/[transactionNo]',
     viewInquries: '/app/inquiries/view/[transactionNo]',

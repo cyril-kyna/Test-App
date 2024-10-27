@@ -30,7 +30,6 @@ function formatTimeForDisplay(date) {
   return new Date(date).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: 'UTC',
   });
 }
 
@@ -134,8 +133,6 @@ export default async function handler(req, res) {
       return {
         fullName,
         totalTime: totalTimeFormatted,
-        timeIn,
-        timeOut,
         timeSpan,
         date: formatDateForDisplay(summaryDate),
         createdAt: summary.createdAt, // Optional: Include raw dates if needed

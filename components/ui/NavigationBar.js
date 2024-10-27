@@ -29,7 +29,7 @@ const Navbar = () => {
   return (
     <motion.nav
       animate={{
-        backgroundColor: scrolled ? 'var(--background)' : 'var(--transparent)',
+        backgroundColor: scrolled ? 'var(--background)' : '#00000000',
         marginTop: scrolled ? 8 : 5,
       }}
       transition={{
@@ -45,7 +45,7 @@ const Navbar = () => {
       {session ? (
         <>
           <Link className={buttonVariants({ variant: "ghost" })} href={routes.timesheet}>Timesheet</Link>
-          <Link className={buttonVariants({ variant: "ghost" })} href={routes.inquries}>Inquiries</Link>
+          <Link className={buttonVariants({ variant: "ghost" })} href={routes.inquiries}>Inquiries</Link>
           <Link className={buttonVariants({ variant: "ghost" })} href={routes.employee}>Employee</Link>
           <Button
             onClick={() => signOut({ callbackUrl: routes.home })}

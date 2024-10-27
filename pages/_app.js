@@ -14,7 +14,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
           enableSystem
           disableTransitionOnChange
         >
-        <main className={`${GeistSans.className} mx-24 flex flex-col justify-center items-center`}>
+        <main className="mx-24 flex flex-col justify-center items-center">
           <Head>
             <title>Test</title> 
           </Head>

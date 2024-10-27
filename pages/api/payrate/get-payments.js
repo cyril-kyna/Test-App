@@ -23,30 +23,29 @@ function formatWeekRange(startDate, endDate) {
   const start = new Date(startDate).toLocaleDateString('en-US', startOptions);
   const end = new Date(endDate).toLocaleDateString('en-US', endOptions);
 
-  if (startDate.getMonth() === endDate.getMonth()) {
-    return `${start} to ${end}`;
-  } else {
-    return `${start} to ${end}`;
-  }
+  return `${start} to ${end}`;
 }
 
 // Helper function to get the Monday of the week for a given date
 function getMonday(d) {
   d = new Date(d);
-  const day = d.getDay(),
-    diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
-  return new Date(d.setDate(diff));
+  const day = d.getUTCDay(); // Use getUTCDay() for consistency with UTC
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1); // adjust when day is Sunday
+  d.setUTCDate(diff);
+  return d;
 }
 
-// Function to group payment records by week
 function groupByWeek(records) {
   if (records.length === 0) return [];
+
+  // Sort the records by date in ascending order
+  records.sort((a, b) => new Date(a.date) - new Date(b.date));
 
   const weeks = [];
   let currentWeek = [];
   let currentMonday = getMonday(new Date(records[0].date)); // Start with the first Monday
   let currentSunday = new Date(currentMonday);
-  currentSunday.setDate(currentMonday.getDate() + 6); // Set to the next Sunday
+  currentSunday.setUTCDate(currentMonday.getUTCDate() + 6); // Set to the next Sunday
 
   records.forEach((record) => {
     const recordDate = new Date(record.date);
@@ -60,13 +59,15 @@ function groupByWeek(records) {
         weeks.push({
           date: formatWeekRange(currentMonday, currentSunday),
           payAmount: currentWeek.reduce((sum, r) => sum + r.payAmount, 0),
+          duration: currentWeek.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+          startDate: new Date(currentMonday), // Add start date for sorting
         });
       }
 
       // Reset the week to the new Monday
       currentMonday = getMonday(recordDate);
       currentSunday = new Date(currentMonday);
-      currentSunday.setDate(currentMonday.getDate() + 6);
+      currentSunday.setUTCDate(currentMonday.getUTCDate() + 6);
 
       // Start a new week
       currentWeek = [record];
@@ -78,8 +79,16 @@ function groupByWeek(records) {
     weeks.push({
       date: formatWeekRange(currentMonday, currentSunday),
       payAmount: currentWeek.reduce((sum, r) => sum + r.payAmount, 0),
+      duration: currentWeek.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+      startDate: new Date(currentMonday), // Add start date for sorting
     });
   }
+
+  // Sort the weeks in descending order based on startDate
+  weeks.sort((a, b) => b.startDate - a.startDate);
+
+  // Remove startDate from the week objects if not needed
+  weeks.forEach((week) => delete week.startDate);
 
   return weeks;
 }
@@ -90,20 +99,22 @@ function groupByMonth(records) {
 
   records.forEach((record) => {
     const date = new Date(record.date);
-    const month = date.getMonth(); // 0-11
-    const year = date.getFullYear();
+    const month = date.getUTCMonth(); // 0-11
+    const year = date.getUTCFullYear();
     const key = `${year}-${month + 1}`;
-    const monthName = date.toLocaleString('default', { month: 'long' });
+    const monthName = date.toLocaleString('default', { month: 'long', timeZone: 'UTC' });
     const sortKey = year * 100 + (month + 1);
 
     if (!months[key]) {
       months[key] = {
         date: `${monthName} ${year}`,
         payAmount: 0,
+        duration: 0,
         sortKey,
       };
     }
     months[key].payAmount += record.payAmount;
+    months[key].duration += (record.dailySummary?.totalTime || 0) / 3600;
   });
 
   // Convert months object to array and sort
@@ -124,26 +135,39 @@ export default async function handler(req, res) {
     const employee = await prisma.employee.findUnique({
       where: { employeeNo },
     });
-    
+
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
     const { filter } = req.query;
     const employeeId = employee.id;
-    
-    // Fetch payment records for the employee
+
+    // Fetch payment records for the employee, including totalTime from dailySummary
     const paymentRecords = await prisma.paymentRecord.findMany({
       where: {
         employeeId,
       },
-      orderBy: { date: 'desc' },
+      include: {
+        dailySummary: {
+          select: {
+            totalTime: true,
+          },
+        },
+      },
     });
 
     let groupedRecords = [];
 
     if (filter === 'daily') {
       // Daily records (no grouping needed)
-      groupedRecords = paymentRecords.map((record) => ({
-        date: formatDateForDisplay(record.date),
-        payAmount: record.payAmount,
-      }));
+      groupedRecords = paymentRecords
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort descending
+        .map((record) => ({
+          date: formatDateForDisplay(record.date),
+          payAmount: record.payAmount,
+          duration: (record.dailySummary?.totalTime || 0) / 3600,
+        }));
     } else if (filter === 'weekly') {
       // Group records by week
       groupedRecords = groupByWeek(paymentRecords);
@@ -152,10 +176,13 @@ export default async function handler(req, res) {
       groupedRecords = groupByMonth(paymentRecords);
     } else {
       // Default to daily if filter is invalid
-      groupedRecords = paymentRecords.map((record) => ({
-        date: formatDateForDisplay(record.date),
-        payAmount: record.payAmount,
-      }));
+      groupedRecords = paymentRecords
+        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort descending
+        .map((record) => ({
+          date: formatDateForDisplay(record.date),
+          payAmount: record.payAmount,
+          duration: (record.dailySummary?.totalTime || 0) / 3600,
+        }));
     }
 
     // Respond with the grouped payment records

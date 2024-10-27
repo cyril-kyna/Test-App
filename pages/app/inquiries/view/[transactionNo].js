@@ -1,10 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
-import { Playfair } from "next/font/google";
 import routes from '@/routes';
-
-const playfair = Playfair({ subsets: ["latin"] });
 
 export default function InquiryDetails() {
   const router = useRouter();
@@ -39,7 +36,7 @@ export default function InquiryDetails() {
 
   // Navigate back to the inquiries list
   const handleGoBack = () => {
-    router.push(routes.inquries);  // Redirect to the inquiries list page
+    router.push(routes.inquiries);  // Redirect to the inquiries list page
   };
 
   // Render loading message
@@ -55,7 +52,7 @@ export default function InquiryDetails() {
   // Render inquiry details when data is available
   return (
     <div>
-      <h1 className={`${playfair.className} mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase`}>
+      <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
         Inquiry Details
       </h1>
       <div className="mt-5 flex flex-col items-end gap-3">
