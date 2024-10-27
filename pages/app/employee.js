@@ -76,9 +76,7 @@ export default function Employee() {
     catch (error) {
       console.error('Error fetching payment records:', error);
     }
-    finally {
-      setTimeout(() => setLoading(false), 1000); // Stop loading when data is fetched
-    }
+    
   };
   const fetchPayRate = async () => {
     try {
