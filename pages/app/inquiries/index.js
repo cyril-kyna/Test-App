@@ -28,7 +28,7 @@ export default function Inquiries() {
       setError(err.message);  // Set error state
     } 
     finally {
-      setLoading(false);  // Always set loading to false after the request completes
+      setTimeout(() => setLoading(false), 1000); // Always set loading to false after the request completes
     }
   };
   // Call the fetch function on component mount
@@ -47,7 +47,11 @@ export default function Inquiries() {
 
   // Render loading message
   if (loading) {
-    return <div className="text-center text-[1.25rem] font-black mt-96">Loading Inquiries...</div>;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <p className="text-white text-2xl font-bold">Loading Inquiries...</p>
+      </div>
+    );
   }
   // Render error message
   if (error) {

@@ -24,8 +24,9 @@ export default function Timesheet() {
         setDailySummaries(data.dailySummaries || []);
       } catch (error) {
         console.error('Error fetching timesheet data:', error);
-      } finally {
-        setLoading(false);
+      } 
+      finally {
+        setTimeout(() => setLoading(false), 1000);
       }
     }
   }, [session]);
@@ -61,9 +62,11 @@ export default function Timesheet() {
       // Refetch the timesheet data to update lastAction and daily summaries (including total time)
       await fetchTimesheetData();
       resetForm();
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error submitting timesheet:', error);
-    } finally {
+    } 
+    finally {
       setSubmitting(false);
       setButtonLoading(''); // Reset loading state
     }
@@ -74,9 +77,12 @@ export default function Timesheet() {
   const isTimeOutDisabled = lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
 
   if (loading) {
-    return <p className="text-center text-[1.25rem] font-black mt-96">Loading Timesheets...</p>;
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <p className="text-white text-2xl font-bold">Loading Timesheet...</p>
+      </div>
+    );
   }
-
   return (
     <div className='flex flex-col items-center gap-5'>
       <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">

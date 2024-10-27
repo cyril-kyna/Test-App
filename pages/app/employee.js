@@ -16,8 +16,13 @@ export default function Employee() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [paymentRecords, setPaymentRecords] = useState([]);
   const { data: session } = useSession();
-  // State to manage the filter type
   const [filter, setFilter] = useState('daily');
+  const [loading, setLoading] = useState(true);
+  const [initialPayRate, setInitialPayRate] = useState({
+    payRate: '',
+    payRateSchedule: '',
+    effectiveDate: '',
+  });
   // Function to handle form submission
   const handleSubmit = async (values, { setSubmitting }) => {
     setIsSubmitting(true);
@@ -37,10 +42,12 @@ export default function Employee() {
         console.log('Payrate calculation successful');
         // Fetch updated payment records after submission
         fetchPaymentRecords();
-      } else {
+      } 
+      else {
         console.error('Error calculating payrate');
       }
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error submitting the form:', error);
     }
     setIsSubmitting(false);
@@ -54,23 +61,57 @@ export default function Employee() {
     try {
       const response = await fetch(`/api/payrate/get-payments?filter=${filter}`);
       const data = await response.json();
-      if (response.ok) {
-        setPaymentRecords(data);
-      } else {
+      if (response.ok && data) {
+        setInitialPayRate({
+          payRate: data.payRate || '',
+          payRateSchedule: data.payRateSchedule || '',
+          effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : '',
+        });
+        setPaymentRecords(data.groupedRecords || []);  // Ensure groupedRecords is an array
+      } 
+      else {
         console.error('Error fetching payment records:', response.statusText);
       }
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error fetching payment records:', error);
     }
+    finally {
+      setTimeout(() => setLoading(false), 1000); // Stop loading when data is fetched
+    }
   };
-
+  const fetchPayRate = async () => {
+    try {
+      const response = await fetch('/api/payrate/get-payrate');
+      const data = await response.json();
+      if (response.ok && data) {
+        setInitialPayRate({
+          payRate: data.payRate || '',
+          payRateSchedule: data.payRateSchedule || '',
+          effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching pay rate:', error);
+    }
+    finally {
+      setTimeout(() => setLoading(false), 1000); // Stop loading when data is fetched
+    }
+  };
   // Fetch payment records on component mount and when session or filter changes
   useEffect(() => {
     if (session) {
       fetchPaymentRecords();
+      fetchPayRate();  // Fetch the pay rate when the session is available
     }
   }, [session, filter]);
-  
+  if (loading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <p className="text-white text-2xl font-bold">Loading Employee's Payrate...</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-10 mt-28">
       <div className="flex flex-col items-start">
@@ -87,11 +128,8 @@ export default function Employee() {
             Set Pay Rate
           </h1>
           <Formik
-            initialValues={{
-              payRate: '',
-              payRateSchedule: '',
-              effectiveDate: '',
-            }}
+            initialValues={initialPayRate}
+            enableReinitialize
             validationSchema={employeePayrateFormSchema}
             onSubmit={handleSubmit}
           >

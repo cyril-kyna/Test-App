@@ -134,6 +134,15 @@ export default async function handler(req, res) {
     const employeeNo = session?.user.employeeID;
     const employee = await prisma.employee.findUnique({
       where: { employeeNo },
+      include: {
+        payRate: {
+          select: {
+            payRate: true,
+            payRateSchedule: true,
+            effectiveDate: true,
+          },
+        },
+      },
     });
 
     if (!employee) {
@@ -142,8 +151,8 @@ export default async function handler(req, res) {
 
     const { filter } = req.query;
     const employeeId = employee.id;
+    const { payRate, payRateSchedule, effectiveDate } = employee.payRate || {};
 
-    // Fetch payment records for the employee, including totalTime from dailySummary
     const paymentRecords = await prisma.paymentRecord.findMany({
       where: {
         employeeId,
@@ -160,24 +169,20 @@ export default async function handler(req, res) {
     let groupedRecords = [];
 
     if (filter === 'daily') {
-      // Daily records (no grouping needed)
       groupedRecords = paymentRecords
-        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort descending
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map((record) => ({
           date: formatDateForDisplay(record.date),
           payAmount: record.payAmount,
           duration: (record.dailySummary?.totalTime || 0) / 3600,
         }));
     } else if (filter === 'weekly') {
-      // Group records by week
       groupedRecords = groupByWeek(paymentRecords);
     } else if (filter === 'monthly') {
-      // Group records by month
       groupedRecords = groupByMonth(paymentRecords);
     } else {
-      // Default to daily if filter is invalid
       groupedRecords = paymentRecords
-        .sort((a, b) => new Date(b.date) - new Date(a.date)) // Sort descending
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map((record) => ({
           date: formatDateForDisplay(record.date),
           payAmount: record.payAmount,
@@ -185,8 +190,13 @@ export default async function handler(req, res) {
         }));
     }
 
-    // Respond with the grouped payment records
-    return res.status(200).json(groupedRecords);
+    // Return response with payRate details and grouped records separately
+    return res.status(200).json({
+      payRate,
+      payRateSchedule,
+      effectiveDate,
+      groupedRecords,
+    });
   } catch (error) {
     console.error('Error fetching payment records:', error);
     return res.status(400).json({ message: error.message });
