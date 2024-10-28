@@ -1,5 +1,4 @@
 import "@/styles/globals.css";
-import { GeistSans } from 'geist/font/sans';
 import NavBar from "@/components/ui/NavigationBar";
 import Head from "next/head";
 import { SessionProvider} from "next-auth/react";
