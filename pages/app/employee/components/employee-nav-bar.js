@@ -8,7 +8,7 @@ import { useSession, signOut } from "next-auth/react";
 import { buttonVariants } from "@/components/ui/button";
 import { ModeToggle } from "@/components/ui/mode-toggle";
 
-export const EmployeeNavbar = () => {
+const EmployeeNavbar = () => {
   const router = useRouter(); // Initialize useRouter to get current path
 
   return (
@@ -32,3 +32,5 @@ export const EmployeeNavbar = () => {
     </nav>
   );
 };
+
+export default EmployeeNavbar;

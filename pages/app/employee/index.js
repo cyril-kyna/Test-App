@@ -4,12 +4,12 @@ import { DatePicker } from '@/components/ui/date-picker';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"; 
 import { Formik, Form, ErrorMessage } from 'formik';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { employeePayrateFormSchema } from '../../../lib/validation/validation-schema';
 import { useSession } from "next-auth/react";
 import { FilterIcon } from '@/public/images/filter-icon';
-import { EmployeeNavbar } from '../employee/components/employee-nav-bar' 
+import EmployeeNavbar from './components/employee-nav-bar.js'; 
 
 export default function Employee() {
   // State to handle form submission and button disable logic
@@ -54,7 +54,7 @@ export default function Employee() {
     setSubmitting(false);
   };
   // Function to fetch payment records from the API
-  const fetchPaymentRecords = async () => {
+  const fetchPaymentRecords = useCallback(async () => {
     setPaymentRecords([]); // Clear current records to prevent stale data display
     try {
       const response = await fetch(`/api/payrate/get-payments?filter=${filter}`);
@@ -66,24 +66,22 @@ export default function Employee() {
           effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : '',
         });
         setPaymentRecords(data.groupedRecords || []);  // Ensure groupedRecords is an array
-      } 
-      else {
+      } else {
         console.error('Error fetching payment records:', response.statusText);
       }
-    } 
-    catch (error) {
+    } catch (error) {
       console.error('Error fetching payment records:', error);
-    }
-    finally {
+    } finally {
       setTimeout(() => setLoading(false), 1000); // Stop loading when data is fetched
     }
-  };
+  }, [filter]); // Only re-create when `filter` changes
+  
   // Fetch payment records on component mount and when session or filter changes
   useEffect(() => {
     if (session) {
       fetchPaymentRecords();
     }
-  }, [session, filter]);
+  }, [session, filter, fetchPaymentRecords]);
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
