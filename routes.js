@@ -8,6 +8,7 @@ const routes = {
     timesheet: '/app/timesheet',
     inquiries: '/app/inquiries',
     employee: '/app/employee',
+    payout: '/app/employee/payout',
     editInquries: '/app/inquiries/edit/[transactionNo]',
     viewInquries: '/app/inquiries/view/[transactionNo]',
   };
