@@ -65,16 +65,18 @@ export default function Employee() {
           payRateSchedule: data.payRateSchedule || '',
           effectiveDate: data.effectiveDate ? new Date(data.effectiveDate) : '',
         });
-        setPaymentRecords(data.groupedRecords || []);  // Ensure groupedRecords is an array
+        // Ensure groupedRecords includes `status`
+        setPaymentRecords(data.groupedRecords || []);
       } else {
         console.error('Error fetching payment records:', response.statusText);
       }
     } catch (error) {
       console.error('Error fetching payment records:', error);
     } finally {
-      setTimeout(() => setLoading(false), 1000); // Stop loading when data is fetched
+     setLoading(false);
     }
-  }, [filter]); // Only re-create when `filter` changes
+  }, [filter]);
+  
   
   // Fetch payment records on component mount and when session or filter changes
   useEffect(() => {
@@ -99,9 +101,9 @@ export default function Employee() {
           Employee Name: <u> {session ? `${session.user.firstName} ${session.user.lastName}` : "Guest"} </u>
         </p>
       </div>
-      <div className="flex flex-col gap-5 bg-background min-w-[60rem] min-h-[30rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
+      <div className="flex flex-col gap-5 bg-background min-w-[65rem] min-h-[32rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
         <EmployeeNavbar/>
-        <div className='flex flex-row items-center justify-between'>
+        <div className='flex flex-row gap-10 items-start justify-between'>
           <div className="flex flex-col gap-7">
             <h1 className="text-left text-xl font-semibold text-balance">
               Set pay rate amount.
@@ -214,6 +216,7 @@ export default function Employee() {
                     <TableHead className="min-w-36">Date</TableHead>
                     <TableHead className="min-w-36">Duration</TableHead>
                     <TableHead className="min-w-36">Payroll Amount</TableHead>
+                    <TableHead className="min-w-36">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -223,11 +226,12 @@ export default function Employee() {
                         <TableCell>{record.date}</TableCell>
                         <TableCell>{record.duration.toFixed(2) ? `${record.duration.toFixed(2)} hrs` : 'N/A'}</TableCell>
                         <TableCell>${record.payAmount.toFixed(2)}</TableCell>
+                        <TableCell>{record.status}</TableCell> 
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan="3" className="text-center py-10">No payment records found.</TableCell>
+                      <TableCell colSpan="4" className="text-center py-10">No payment records found.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>

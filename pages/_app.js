@@ -1,5 +1,5 @@
 import "@/styles/globals.css";
-import NavBar from "@/components/ui/NavigationBar";
+import NavBar from "@/components/ui/navigation-bar";
 import Head from "next/head";
 import { SessionProvider} from "next-auth/react";
 import { ThemeProvider } from "@/components/ui/theme-provider";

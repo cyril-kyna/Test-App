@@ -11,7 +11,7 @@ export default async function handler(req, res) {
     // Fetch the latest 10 timesheet records
     const timesheets = await prisma.timesheet.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 13,
       select: {
         id: true,
         time: true,

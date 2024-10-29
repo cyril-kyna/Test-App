@@ -44,8 +44,8 @@ const Navbar = () => {
       <Link className={buttonVariants({ variant: "ghost" })} href={routes.contact}>Contact</Link>
       {session ? (
         <>
-          <Link className={buttonVariants({ variant: "ghost" })} href={routes.timesheet}>Timesheet</Link>
           <Link className={buttonVariants({ variant: "ghost" })} href={routes.inquiries}>Inquiries</Link>
+          <Link className={buttonVariants({ variant: "ghost" })} href={routes.timesheet}>Timesheet</Link>
           <Link className={buttonVariants({ variant: "ghost" })} href={routes.employee}>Employee</Link>
           <Button
             onClick={() => signOut({ callbackUrl: routes.home })}

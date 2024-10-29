@@ -60,6 +60,7 @@ function groupByWeek(records) {
           date: formatWeekRange(currentMonday, currentSunday),
           payAmount: currentWeek.reduce((sum, r) => sum + r.payAmount, 0),
           duration: currentWeek.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+          status: "Unpaid",
           startDate: new Date(currentMonday), // Add start date for sorting
         });
       }
@@ -80,6 +81,7 @@ function groupByWeek(records) {
       date: formatWeekRange(currentMonday, currentSunday),
       payAmount: currentWeek.reduce((sum, r) => sum + r.payAmount, 0),
       duration: currentWeek.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+      status: "Unpaid",
       startDate: new Date(currentMonday), // Add start date for sorting
     });
   }
@@ -111,6 +113,7 @@ function groupByMonth(records) {
         payAmount: 0,
         duration: 0,
         sortKey,
+        status: "Unpaid",
       };
     }
     months[key].payAmount += record.payAmount;
@@ -156,6 +159,7 @@ export default async function handler(req, res) {
     const paymentRecords = await prisma.paymentRecord.findMany({
       where: {
         employeeId,
+        status: 'Unpaid', // Only fetch unpaid records
       },
       include: {
         dailySummary: {
@@ -175,6 +179,7 @@ export default async function handler(req, res) {
           date: formatDateForDisplay(record.date),
           payAmount: record.payAmount,
           duration: (record.dailySummary?.totalTime || 0) / 3600,
+          status: record.status,
         }));
     } else if (filter === 'weekly') {
       groupedRecords = groupByWeek(paymentRecords);
@@ -187,6 +192,7 @@ export default async function handler(req, res) {
           date: formatDateForDisplay(record.date),
           payAmount: record.payAmount,
           duration: (record.dailySummary?.totalTime || 0) / 3600,
+          status: record.status,
         }));
     }
 

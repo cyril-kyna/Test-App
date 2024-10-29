@@ -11,7 +11,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function TimesheetTable() {
+export function TimesheetTable({className}) {
   const [timesheets, setTimesheets] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -34,10 +34,10 @@ export function TimesheetTable() {
   }, []);
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>Timesheet Logs</CardTitle>
-        <CardDescription>Showing the latest 10 records of all employees.</CardDescription>
+        <CardDescription>Showing the latest 13 records of all employees.</CardDescription>
       </CardHeader>
       <CardContent>
         <Table>
@@ -54,10 +54,10 @@ export function TimesheetTable() {
               ? // Display skeleton rows while loading
                 Array.from({ length: 10 }).map((_, index) => (
                   <TableRow key={index}>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-[1.90rem] w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-[1.90rem] w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-[1.90rem] w-full" /></TableCell>
+                    <TableCell><Skeleton className="h-[1.90rem] w-full" /></TableCell>
                   </TableRow>
                 ))
               : // Display actual timesheet data once loaded

@@ -30,7 +30,7 @@ const chartConfig = {
   },
 };
 
-export function PaymentChart() {
+export function PaymentChart({ className }) {
   const [chartData, setChartData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("daily");
@@ -76,7 +76,7 @@ export function PaymentChart() {
   };
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <div className="flex flex-row justify-between items-start">
           <div className="flex flex-col">
@@ -105,11 +105,11 @@ export function PaymentChart() {
           // Skeleton loader while data is loading
           <div className="grid grid-cols-10 gap-2">
             {Array.from({ length: 10 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 w-full" />
+              <Skeleton key={index} className="h-[14.5rem] w-full" />
             ))}
           </div>
-        ) : (
-          // Render the chart once data is loaded
+        ) : chartData.length > 0 ? (
+          // Render the chart if data is available
           <ChartContainer config={chartConfig}>
             <BarChart width={800} data={chartData}>
               <CartesianGrid vertical={false} />
@@ -129,6 +129,11 @@ export function PaymentChart() {
               <Bar dataKey="desktop" fill="var(--color-desktop)" radius={8} />
             </BarChart>
           </ChartContainer>
+        ) : (
+          // Display message if no data is available
+          <div className="flex items-center justify-center text-muted-foreground min-h-[14.5rem]">
+            No data available.
+          </div>
         )}
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">

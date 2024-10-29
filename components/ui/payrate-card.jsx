@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function PayrateCard() {
+export function PayrateCard({ className }) {
   const [payRateInfo, setPayRateInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -27,11 +27,13 @@ export function PayrateCard() {
         setPayRateInfo({
           payRate,
           payRateSchedule,
-          effectiveDate: new Date(effectiveDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }),
+          effectiveDate: effectiveDate
+            ? new Date(effectiveDate).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : "No effective date available.",
         });
       } catch (error) {
         console.error("Error fetching pay rate information:", error);
@@ -44,7 +46,7 @@ export function PayrateCard() {
   }, []);
 
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader>
         <CardTitle>Your Payrate</CardTitle>
         <CardDescription>Current pay rate information</CardDescription>
@@ -55,16 +57,19 @@ export function PayrateCard() {
           <div className="space-y-3">
             <Skeleton className="h-6 w-1/2" /> {/* Pay Rate */}
             <Skeleton className="h-6 w-1/2" /> {/* Pay Rate Schedule */}
-            <Skeleton className="h-6 w-1/2" /> {/* Effective Date */}
           </div>
         ) : (
-          // Display actual pay rate details once data is loaded
+          // Display actual pay rate details or fallback if data is unavailable
           <div className="space-y-2">
             <p>
-              <strong>Your Payrate:</strong> ${payRateInfo?.payRate?.toFixed(2)} {payRateInfo?.payRateSchedule}
+              <strong>Your Payrate:</strong>{" "}
+              {payRateInfo?.payRate !== undefined
+                ? `$${payRateInfo.payRate.toFixed(2)} ${payRateInfo.payRateSchedule}`
+                : "No payrate available."}
             </p>
             <p>
-              <strong>Effective Date:</strong> {payRateInfo?.effectiveDate}
+              <strong>Effective Date:</strong>{" "}
+              {payRateInfo?.effectiveDate || "Not Set"}
             </p>
           </div>
         )}

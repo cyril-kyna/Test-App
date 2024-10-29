@@ -159,7 +159,7 @@ export default function Timesheet() {
 
       {/* Daily Summaries Table */}
       <div className='flex flex-col gap-2 mt-10 mb-40'>
-        <h1 className="text-[1.5rem] font-[900] uppercase">Summary:</h1>
+        <h1 className="text-[1.5rem] font-[900] uppercase">Your Daily Summary:</h1>
         <div className="container mb-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
           <Table className="min-w-[50rem]">
             <TableRow>
