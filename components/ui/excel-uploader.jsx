@@ -20,10 +20,10 @@ export default function ExcelUploader({ onImportSuccess }) {
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          // Validate structure before sending
-          const isValid = validateExcelData(jsonData);
-          if (!isValid) {
-            setError("Invalid Excel format. Ensure it has 'Date', 'Type', and 'Time' columns with valid data.");
+          // Validate structure and dates before sending
+          const validationResult = validateExcelData(jsonData);
+          if (validationResult.error) {
+            setError(validationResult.message);
             return;
           }
 
@@ -38,9 +38,11 @@ export default function ExcelUploader({ onImportSuccess }) {
           if (!response.ok) {
             setError(result.message || 'Failed to import logs');
           } else {
-            alert('Logs imported successfully!');
             const isTodayIncluded = checkIfTodayIncluded(jsonData);
             onImportSuccess(isTodayIncluded); // Notify parent component if today’s logs are present
+            // Clear files and error after successful import
+            setFiles([]);
+            setError(null);
           }
         } catch (error) {
           console.error("Error uploading logs:", error);
@@ -53,7 +55,7 @@ export default function ExcelUploader({ onImportSuccess }) {
     });
 
     setFiles(newFiles);
-  }, []);
+  }, [onImportSuccess]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -66,6 +68,31 @@ export default function ExcelUploader({ onImportSuccess }) {
     const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD' format
     return logs.some((log) => log.Date === today);
   };
+
+  // Helper function to validate and normalize Excel data
+  function validateExcelData(data) {
+    const requiredColumns = ["Date", "Type", "Time"];
+    const today = new Date(); // Get the current date for comparison
+
+    for (const row of data) {
+      const hasValidColumns = requiredColumns.every(col => col in row);
+      const isValidType = ["TIME_IN", "BREAK", "TIME_OUT"].includes(row.Type?.toUpperCase());
+
+      if (!hasValidColumns || !isValidType) {
+        return { error: true, message: "Invalid Excel format. Ensure it has 'Date', 'Type', and 'Time' columns with valid data." };
+      }
+
+      // Check if the date is in the future
+      const logDate = new Date(row.Date);
+      if (logDate > today) {
+        return { error: true, message: `Date '${row.Date}' is in the future.` };
+      }
+
+      row.Type = row.Type.toUpperCase(); // Normalize the type
+    }
+
+    return { error: false }; // All validations passed
+  }
 
   // Handler to remove a file
   const handleRemoveFile = (fileToRemove) => {
@@ -118,18 +145,4 @@ export default function ExcelUploader({ onImportSuccess }) {
       )}
     </div>
   );
-}
-
-// Helper function to validate and normalize Excel data
-function validateExcelData(data) {
-  const requiredColumns = ["Date", "Type", "Time"];
-  return data.every((row) => {
-    const hasValidColumns = requiredColumns.every((col) => col in row);
-    const isValidType = ["TIME_IN", "BREAK", "TIME_OUT"].includes(row.Type?.toUpperCase());
-    if (hasValidColumns && isValidType) {
-      row.Type = row.Type.toUpperCase();
-      return true;
-    }
-    return false;
-  });
 }

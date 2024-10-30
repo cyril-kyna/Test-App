@@ -25,6 +25,7 @@ export default function Timesheet() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isPageLoading, setIsPageLoading] = useState(false); // Track page loading state for pagination
+  const [importSuccessMessage, setImportSuccessMessage] = useState(''); 
 
   // Fetch timesheet data to determine last action and daily summaries
   const fetchTimesheetData = useCallback(async (page = 1) => {
@@ -92,13 +93,17 @@ export default function Timesheet() {
     XLSX.writeFile(workbook, "timesheet.xlsx");
   };
 
-  const onImportSuccess = (isTodayIncluded) => {
-    alert('Logs imported successfully!');
+  const onImportSuccess = async (isTodayIncluded) => {
+    setImportSuccessMessage('Logs imported successfully!');
     if (isTodayIncluded) {
       setDisableButtons(true);
     }
-    window.location.reload();
-  };
+    // Refetch data instead of reloading the page
+    await fetchTimesheetData(currentPage);
+
+    // Optional: Clear success message after a few seconds
+    setTimeout(() => setImportSuccessMessage(''), 3000);
+  };  
 
   const handlePageChange = (page) => {
     if (!isPageLoading) { // Prevent page change while loading
@@ -115,12 +120,15 @@ export default function Timesheet() {
       <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
         Timesheet
       </h1>
-
+      {/* Success Message */}
+      {importSuccessMessage && (
+        <p className="text-primary text-lg">{importSuccessMessage}</p>
+      )}
       {/* Import and Export Buttons */}
       <p className='text-center'>
         For Log Uploads, Ensure your Excel file has columns for:<br/>
-        Date (MM/DD/YYYY), Type (TIME_IN, BREAK, TIME_OUT), and Time (HH),<br/>
-        following the sequence TIME_IN → BREAK → TIME_OUT."</p>
+        Date MM/DD/YYYY, Type TIME_IN, BREAK, TIME_OUT, and Time HH,<br/>
+      </p>
       <div className="flex flex-col gap-4 mb-4">
         <ExcelUploader onImportSuccess={onImportSuccess} />
         <Button onClick={handleExport} className="min-w-28">
@@ -202,7 +210,7 @@ export default function Timesheet() {
               <Skeleton key={i} className="h-9 w-[50rem] mb-2 rounded" />
             ))
           ) : (
-            <Table className="min-w-[50rem] min-h-[28rem]">
+            <Table className="min-w-[50rem]">
               <TableRow>
                 <TableHead>Employee Name</TableHead>
                 <TableHead>Date</TableHead>
