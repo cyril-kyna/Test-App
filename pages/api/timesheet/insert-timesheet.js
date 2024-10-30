@@ -129,9 +129,20 @@ async function validateAndProcessLogs(employeeId, logs) {
     let date = log.Date;
     let time = log.Time;
   
-    // Process the date as before...
-    if (typeof date === 'string') {
-      date = date.replace(/\//g, "-"); // Replace any slashes with dashes
+    // **Process the date**
+    if (typeof date === 'number') {
+      // **Convert serial date number to YYYY-MM-DD**
+      const excelEpoch = new Date(1899, 11, 30); // Excel's epoch start
+      date = new Date(excelEpoch.getTime() + date * 86400000); // Add days in milliseconds
+  
+      // Format date as YYYY-MM-DD
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      date = `${year}-${month}-${day}`;
+    } else if (typeof date === 'string') {
+      // Replace any slashes with dashes
+      date = date.replace(/\//g, "-");
   
       // Convert date format if it matches MM-DD-YYYY or DD-MM-YYYY
       if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
@@ -139,9 +150,8 @@ async function validateAndProcessLogs(employeeId, logs) {
         // Decide if it's MM-DD-YYYY or DD-MM-YYYY based on your locale
         // For this example, let's assume MM-DD-YYYY
         date = `${year}-${part1}-${part2}`; // Reorder to YYYY-MM-DD
-      } else if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        // Already in YYYY-MM-DD format, leave as is
       }
+      // Leave YYYY-MM-DD format as is
     }
   
     // **Process the time**

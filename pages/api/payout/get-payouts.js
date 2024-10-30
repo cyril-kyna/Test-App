@@ -1,6 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { getEmployeeId } from '@/lib/helpers';
 
 // Initialize Prisma Client for database access
 const prisma = new PrismaClient();
@@ -138,18 +137,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
+  const employeeId = await getEmployeeId(req, res);
 
   try {
-    const session = await getServerSession(req, res, authOptions);
-    const employeeNo = session?.user.employeeID;
-    const employee = await prisma.employee.findUnique({ where: { employeeNo } });
-
-    if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
-    }
-
     const { payoutMethod, payoutFrequency, dateRange } = req.body;
-    const employeeId = employee.id;
     let groupedRecords = [];
     let paymentRecords;
 

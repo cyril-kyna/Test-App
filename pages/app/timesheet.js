@@ -1,5 +1,4 @@
 import { Formik, Form } from 'formik';
-import { DateTime } from 'luxon';
 import { Button } from '@/components/ui/button';
 import ExcelUploader from '@/components/ui/excel-uploader';
 import { useSession } from 'next-auth/react';
@@ -32,7 +31,7 @@ export default function Timesheet() {
 
   // Fetch timesheet data to determine last action and daily summaries
   const fetchTimesheetData = useCallback(async (page = 1) => {
-    if (session && (!dataFetched || page !== currentPage)) { // Add condition here
+    if (session) {
       setIsPageLoading(true);
       try {
         const res = await fetch(`/api/timesheet/get-summary?page=${page}`);
@@ -44,23 +43,32 @@ export default function Timesheet() {
         setCurrentPage(data.currentPage);
         setTotalPages(data.totalPages);
         setDataFetched(true); // Mark as fetched
-      } catch (error) {
+      } 
+      catch (error) {
         console.error('Error fetching timesheet data:', error);
-      } finally {
+      } 
+      finally {
         setLoading(false);
         setIsPageLoading(false);
       }
     }
-  }, [session, currentPage, dataFetched]);
-
+  }, [session]);
   useEffect(() => {
     fetchTimesheetData(currentPage);
     setMounted(true);
   }, [session, fetchTimesheetData, currentPage]);
+  
   if (!mounted) {
     // Return null or a loading indicator to prevent hydration issues
     return null;
   }
+
+  const handlePageChange = (page) => {
+    if (!isPageLoading) { // Prevent page change while loading
+      setCurrentPage(page);
+    }
+  };
+
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       if (!session && status !== 'loading') {
@@ -112,166 +120,163 @@ export default function Timesheet() {
     setTimeout(() => setImportSuccessMessage(''), 3000);
   };  
 
-  const handlePageChange = (page) => {
-    if (!isPageLoading) { // Prevent page change while loading
-      setCurrentPage(page);
-    }
-  };
-
   const isTimeInDisabled = disableButtons || lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
   const isBreakDisabled = disableButtons || lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
   const isTimeOutDisabled = disableButtons || lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
 
   return (
-    <div className='flex flex-col items-center gap-5'>
-      <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
+    <div className='flex flex-col mt-40 mb-40 items-left gap-10'>
+      <h1 className="text-[5rem] font-[900] uppercase">
         Timesheet
       </h1>
-      {/* Success Message */}
-      {importSuccessMessage && (
-        <p className="text-primary text-lg">{importSuccessMessage}</p>
-      )}
-      {/* Import and Export Buttons */}
-      <p className='text-center'>
-        For Log Uploads, Ensure your Excel file has columns for:<br/>
-        Date MM/DD/YYYY, Type TIME_IN, BREAK, TIME_OUT, and Time HH,<br/>
-      </p>
-      <div className="flex flex-col gap-4 mb-4">
-        <ExcelUploader onImportSuccess={onImportSuccess} />
-        <Button onClick={handleExport} className="min-w-28">
-          Export Your Timesheet
-        </Button>
-      </div>
-
-      {/* Status Message */}
-      {lastAction === 'TIME_OUT' ? (
-        <p className='text-xl text-primary'>
-          You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time for today.
-        </p>
-      ) : lastAction === 'BREAK' ? (
-        <p className='text-primary'>
-          You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time so far, Ready to continue?
-        </p>
-      ) : lastAction === 'TIME_IN' ? (
-        <p className='text-xl text-primary'>
-          Your time is now running. Click <b>Break</b> if you want to pause, or <b>Time out</b> if you are done.
-        </p>
-      ) : (
-        <p className='text-xl text-primary'>
-          Click <b>Time In</b> if you want to start.
-        </p>
-      )}
-
-      {/* Time In/Out/Break Form */}
-      <Formik initialValues={{ action: '' }} onSubmit={handleSubmit}>
-        {({ setFieldValue }) => (
-          <Form className="flex flex-row justify-center gap-5 bg-background w-fit p-10 rounded-xl border-[1px] border-zinc-700">
-            <Button
-              type="button"
-              className="min-w-28"
-              onClick={() => {
-                setFieldValue('action', 'TIME_IN');
-                setButtonLoading('TIME_IN');
-                handleSubmit({ action: 'TIME_IN' }, { setSubmitting: () => {}, resetForm: () => {} });
-              }}
-              disabled={buttonLoading === 'TIME_IN' || isTimeInDisabled}
-            >
-              {buttonLoading === 'TIME_IN' ? 'Loading...' : 'Time In'}
+      <div className='flex flex-row gap-20'>
+        <div className='flex flex-col gap-5'>
+          {/* Import and Export Buttons */}
+          <div className="flex flex-col gap-4 min-w-[15rem]">
+            {/* Success Message */}
+            {importSuccessMessage && (
+              <p className="text-primary text-lg">{importSuccessMessage}</p>
+            )}
+            <p className='text-left'>
+              For Timesheet Log Uploads, Ensure your Excel file has columns for:<br/>
+              Date MM/DD/YYYY, Type TIME_IN, BREAK, TIME_OUT, and Time HH,<br/>
+            </p>
+            <ExcelUploader onImportSuccess={onImportSuccess} className="min-w-[15rem]"/>
+            <Button variant="outline" onClick={handleExport} className="min-w-[15rem] border-2 border-dashed p-8 text-muted-foreground">
+              Export you Daily Summary
             </Button>
-
-            <Button
-              type="button"
-              className="min-w-28"
-              onClick={() => {
-                setFieldValue('action', 'BREAK');
-                setButtonLoading('BREAK');
-                handleSubmit({ action: 'BREAK' }, { setSubmitting: () => {}, resetForm: () => {} });
-              }}
-              disabled={buttonLoading === 'BREAK' || isBreakDisabled}
-            >
-              {buttonLoading === 'BREAK' ? 'Loading...' : 'Break'}
-            </Button>
-
-            <Button
-              type="button"
-              className="min-w-28"
-              onClick={() => {
-                setFieldValue('action', 'TIME_OUT');
-                setButtonLoading('TIME_OUT');
-                handleSubmit({ action: 'TIME_OUT' }, { setSubmitting: () => {}, resetForm: () => {} });
-              }}
-              disabled={buttonLoading === 'TIME_OUT' || isTimeOutDisabled}
-            >
-              {buttonLoading === 'TIME_OUT' ? 'Loading...' : 'Time Out'}
-            </Button>
-          </Form>
-        )}
-      </Formik>
-
-      {/* Daily Summaries Table with Skeleton Loading */}
-      <div className='flex flex-col gap-2 mt-10 mb-40'>
-        <h1 className="text-[1.5rem] font-[900] uppercase">Your Daily Summary:</h1>
-        <div className="container mb-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
-          {isPageLoading ? (
-            Array.from({ length: 10 }).map((_, i) => (
-              <Skeleton key={i} className="h-9 w-[50rem] mb-2 rounded" />
-            ))
-          ) : (
-            <Table className="min-w-[50rem]">
-              <TableRow>
-                <TableHead>Employee Name</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Duration</TableHead>
-                <TableHead>Time Span</TableHead>
-              </TableRow>
-              <TableBody>
-                {dailySummaries.length > 0 ? (
-                  dailySummaries.map((summary, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{summary.fullName}</TableCell>
-                      <TableCell>{summary.date}</TableCell>
-                      <TableCell>{summary.totalTime}</TableCell>
-                      <TableCell>{summary.timeSpan}</TableCell>
-                    </TableRow>
-                  ))
+          </div>
+          {/* Timesheet Actions Form */}
+          <Formik initialValues={{ action: '' }} onSubmit={handleSubmit}>
+            {({ setFieldValue }) => (
+              <Form className="flex flex-col justify-center items-center gap-5 bg-card w-fit p-10 rounded-xl border-[1px] border-zinc-700">
+                {/* Timesheet Status Message */}
+                {lastAction === 'TIME_OUT' ? (
+                  <p className='text-primary'>
+                    You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time for today.
+                  </p>
+                ) : lastAction === 'BREAK' ? (
+                  <p className='text-primary'>
+                    You have accumulated <b>{dailySummaries[0]?.totalTime || '00:00:00'}</b> total time so far, Ready to continue?
+                  </p>
+                ) : lastAction === 'TIME_IN' ? (
+                  <p className='text-primary'>
+                    Your time is now running. Click <b>Break</b> if you want to pause, or <b>Time out</b> if you are done.
+                  </p>
                 ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-10">
-                      You have no records.
-                    </TableCell>
-                  </TableRow>
+                  <p className='text-primary'>
+                    Click <b>Time In</b> if you want to start.
+                  </p>
                 )}
-              </TableBody>
-            </Table>
-          )}
+                <div className='flex flex-row gap-5'>
+                  {/* Time In */}
+                  <Button
+                    type="button"
+                    className="min-w-28"
+                    onClick={() => {
+                      setFieldValue('action', 'TIME_IN');
+                      setButtonLoading('TIME_IN');
+                      handleSubmit({ action: 'TIME_IN' }, { setSubmitting: () => {}, resetForm: () => {} });
+                    }}
+                    disabled={buttonLoading === 'TIME_IN' || isTimeInDisabled}
+                    >
+                    {buttonLoading === 'TIME_IN' ? 'Loading...' : 'Time In'}
+                  </Button>
+                  {/* Break */}
+                  <Button
+                    type="button"
+                    className="min-w-28"
+                    onClick={() => {
+                      setFieldValue('action', 'BREAK');
+                      setButtonLoading('BREAK');
+                      handleSubmit({ action: 'BREAK' }, { setSubmitting: () => {}, resetForm: () => {} });
+                    }}
+                    disabled={buttonLoading === 'BREAK' || isBreakDisabled}
+                    >
+                    {buttonLoading === 'BREAK' ? 'Loading...' : 'Break'}
+                  </Button>
+                  {/* Break */}
+                  <Button
+                    type="button"
+                    className="min-w-28"
+                    onClick={() => {
+                      setFieldValue('action', 'TIME_OUT');
+                      setButtonLoading('TIME_OUT');
+                      handleSubmit({ action: 'TIME_OUT' }, { setSubmitting: () => {}, resetForm: () => {} });
+                    }}
+                    disabled={buttonLoading === 'TIME_OUT' || isTimeOutDisabled}
+                  >
+                    {buttonLoading === 'TIME_OUT' ? 'Loading...' : 'Time Out'}
+                  </Button>
+                </div>
+              </Form>
+            )}
+          </Formik>
         </div>
-
-        {/* Pagination Component */}
-        <Pagination className="mt-4">
-          <PaginationContent>
-            {currentPage > 1 && (
-              <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={isPageLoading}>
-                Previous
-              </PaginationPrevious>
+        {/* Daily Summaries Table with Skeleton Loading */}
+        <div className='flex flex-col gap-2 min-h-[37rem]'>
+          <h1 className="text-[1.5rem] font-[900] uppercase">Your Daily Summary:</h1>
+          <div className="container h-full bg-card p-5 border-zinc-700 rounded-xl border-[1px]">
+            {isPageLoading ? (
+              Array.from({ length: 10 }).map((_, i) => (
+                <Skeleton key={i} className="h-9 w-[50rem] mb-2 rounded" />
+              ))
+            ) : (
+              <Table className="min-w-[50rem]">
+                <TableRow>
+                  <TableHead>Employee Name</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Duration</TableHead>
+                  <TableHead>Time Span</TableHead>
+                </TableRow>
+                <TableBody>
+                  {dailySummaries.length > 0 ? (
+                    dailySummaries.map((summary, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{summary.fullName}</TableCell>
+                        <TableCell>{summary.date}</TableCell>
+                        <TableCell>{summary.totalTime}</TableCell>
+                        <TableCell>{summary.timeSpan}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-10">
+                        You have no records.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             )}
-            {[...Array(totalPages)].map((_, i) => (
-              <PaginationItem key={i}>
-                <PaginationLink
-                  isActive={currentPage === i + 1}
-                  onClick={() => handlePageChange(i + 1)}
-                  disabled={isPageLoading}
-                >
-                  {i + 1}
-                </PaginationLink>
-              </PaginationItem>
-            ))}
-            {currentPage < totalPages && (
-              <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={isPageLoading}>
-                Next
-              </PaginationNext>
-            )}
-          </PaginationContent>
-        </Pagination>
+          </div>
+          {/* Pagination Component */}
+          <Pagination className="mt-4">
+            <PaginationContent>
+              {currentPage > 1 && (
+                <PaginationPrevious className="cursor-pointer" onClick={() => handlePageChange(currentPage - 1)} disabled={isPageLoading}>
+                  Previous
+                </PaginationPrevious>
+              )}
+              {[...Array(totalPages)].map((_, i) => (
+                <PaginationItem key={i}>
+                  <PaginationLink
+                    isActive={currentPage === i + 1}
+                    onClick={() => handlePageChange(i + 1)}
+                    disabled={isPageLoading}
+                  >
+                    {i + 1}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              {currentPage < totalPages && (
+                <PaginationNext className="cursor-pointer" onClick={() => handlePageChange(currentPage + 1)} disabled={isPageLoading}>
+                  Next
+                </PaginationNext>
+              )}
+            </PaginationContent>
+          </Pagination>
+        </div>
       </div>
     </div>
   );

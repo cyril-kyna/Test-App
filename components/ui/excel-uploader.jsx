@@ -107,7 +107,7 @@ export default function ExcelUploader({ onImportSuccess }) {
         className={cn(
           "flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg",
           isDragActive ? "bg-primary/10 border-primary" : "bg-muted/10 border-border",
-          "hover:bg-muted transition-colors cursor-pointer"
+          "hover:bg-accent transition-colors cursor-pointer"
         )}
       >
         <input {...getInputProps()} />
