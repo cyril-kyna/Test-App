@@ -1,4 +1,4 @@
-import { Formik, Form, Field } from 'formik';
+import { Formik, Form } from 'formik';
 import { Button } from '@/components/ui/button';
 import ExcelUploader from '@/components/ui/excel-uploader';
 import { useSession } from 'next-auth/react';
@@ -13,6 +13,7 @@ import {
   PaginationNext,
 } from '@/components/ui/pagination';
 import * as XLSX from 'xlsx';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Timesheet() {
   const { data: session, status } = useSession();
@@ -20,13 +21,15 @@ export default function Timesheet() {
   const [dailySummaries, setDailySummaries] = useState([]); // Store array of daily summaries
   const [loading, setLoading] = useState(true); // Track loading state
   const [buttonLoading, setButtonLoading] = useState(''); // Track which button is loading
-  const [disableButtons, setDisableButtons] = useState(false); 
+  const [disableButtons, setDisableButtons] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [isPageLoading, setIsPageLoading] = useState(false); // Track page loading state for pagination
 
   // Fetch timesheet data to determine last action and daily summaries
   const fetchTimesheetData = useCallback(async (page = 1) => {
     if (session) {
+      setIsPageLoading(true); // Start loading state for page fetch
       try {
         const res = await fetch(`/api/timesheet/get-summary?page=${page}`);
         if (!res.ok) {
@@ -39,9 +42,9 @@ export default function Timesheet() {
         setTotalPages(data.totalPages);
       } catch (error) {
         console.error('Error fetching timesheet data:', error);
-      } 
-      finally {
+      } finally {
         setLoading(false);
+        setIsPageLoading(false); // End loading state for page fetch
       }
     }
   }, [session]);
@@ -98,20 +101,14 @@ export default function Timesheet() {
   };
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    if (!isPageLoading) { // Prevent page change while loading
+      setCurrentPage(page);
+    }
   };
 
   const isTimeInDisabled = disableButtons || lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
   const isBreakDisabled = disableButtons || lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
   const isTimeOutDisabled = disableButtons || lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
-
-  if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-        <p className="text-white text-2xl font-bold">Loading Timesheet...</p>
-      </div>
-    );
-  }
 
   return (
     <div className='flex flex-col items-center gap-5'>
@@ -120,6 +117,10 @@ export default function Timesheet() {
       </h1>
 
       {/* Import and Export Buttons */}
+      <p className='text-center'>
+        For Log Uploads, Ensure your Excel file has columns for:<br/>
+        Date (MM/DD/YYYY), Type (TIME_IN, BREAK, TIME_OUT), and Time (HH),<br/>
+        following the sequence TIME_IN → BREAK → TIME_OUT."</p>
       <div className="flex flex-col gap-4 mb-4">
         <ExcelUploader onImportSuccess={onImportSuccess} />
         <Button onClick={handleExport} className="min-w-28">
@@ -192,42 +193,49 @@ export default function Timesheet() {
         )}
       </Formik>
 
-      {/* Daily Summaries Table */}
+      {/* Daily Summaries Table with Skeleton Loading */}
       <div className='flex flex-col gap-2 mt-10 mb-40'>
         <h1 className="text-[1.5rem] font-[900] uppercase">Your Daily Summary:</h1>
         <div className="container mb-10 bg-background p-5 border-zinc-700 rounded-xl border-[1px]">
-          <Table className="min-w-[50rem]">
-            <TableRow>
-              <TableHead>Employee Name</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Duration</TableHead>
-              <TableHead>Time Span</TableHead>
-            </TableRow>
-            <TableBody>
-              {dailySummaries.length > 0 ? (
-                dailySummaries.map((summary, index) => (
-                  <TableRow key={index}>
-                    <TableCell>{summary.fullName}</TableCell>
-                    <TableCell>{summary.date}</TableCell>
-                    <TableCell>{summary.totalTime}</TableCell>
-                    <TableCell>{summary.timeSpan}</TableCell>
+          {isPageLoading ? (
+            Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-9 w-[50rem] mb-2 rounded" />
+            ))
+          ) : (
+            <Table className="min-w-[50rem] min-h-[28rem]">
+              <TableRow>
+                <TableHead>Employee Name</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Time Span</TableHead>
+              </TableRow>
+              <TableBody>
+                {dailySummaries.length > 0 ? (
+                  dailySummaries.map((summary, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{summary.fullName}</TableCell>
+                      <TableCell>{summary.date}</TableCell>
+                      <TableCell>{summary.totalTime}</TableCell>
+                      <TableCell>{summary.timeSpan}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-10">
+                      You have no records.
+                    </TableCell>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center py-10">
-                    You have no records.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
+
         {/* Pagination Component */}
         <Pagination className="mt-4">
           <PaginationContent>
             {currentPage > 1 && (
-              <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>
+              <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)} disabled={isPageLoading}>
                 Previous
               </PaginationPrevious>
             )}
@@ -236,13 +244,14 @@ export default function Timesheet() {
                 <PaginationLink
                   isActive={currentPage === i + 1}
                   onClick={() => handlePageChange(i + 1)}
+                  disabled={isPageLoading}
                 >
                   {i + 1}
                 </PaginationLink>
               </PaginationItem>
             ))}
             {currentPage < totalPages && (
-              <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>
+              <PaginationNext onClick={() => handlePageChange(currentPage + 1)} disabled={isPageLoading}>
                 Next
               </PaginationNext>
             )}
