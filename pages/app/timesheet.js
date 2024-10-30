@@ -1,4 +1,5 @@
 import { Formik, Form } from 'formik';
+import { DateTime } from 'luxon';
 import { Button } from '@/components/ui/button';
 import ExcelUploader from '@/components/ui/excel-uploader';
 import { useSession } from 'next-auth/react';
@@ -114,44 +115,27 @@ export default function Timesheet() {
   const isTimeInDisabled = disableButtons || lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
   const isBreakDisabled = disableButtons || lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
   const isTimeOutDisabled = disableButtons || lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
-  
-  const formatTimeSpan = (timespan) => {
-    // Split the timespan into start and end times
+
+  const formatTimeSpan = (timespan, date) => {
     const [startTime, endTime] = timespan.split(' - ');
   
-    // Helper function to parse time strings into Date objects
-    const parseTimeToDate = (timeStr) => {
-      const [time, period] = timeStr.split(' ');
-      let [hours, minutes] = time.split(':').map(Number);
-  
-      // Convert to 24-hour format
-      if (period === 'PM' && hours < 12) hours += 12;
-      if (period === 'AM' && hours === 12) hours = 0;
-  
-      // Create a new Date object with today's date and the parsed time
-      const date = new Date();
-      date.setHours(hours, minutes, 0, 0);
-      return date;
+    const parseTime = (timeStr) => {
+      // Combine the date and time
+      const dateTimeStr = `${date} ${timeStr}`;
+      // Parse the combined date and time string
+      return DateTime.fromFormat(dateTimeStr, 'EEE, MMM dd, yyyy hh:mm a', { zone: 'UTC' })
+        .setZone(DateTime.local().zoneName); // Convert to local timezone
     };
   
-    // Parse start and end times
-    const startDate = parseTimeToDate(startTime);
-    const endDate = parseTimeToDate(endTime);
+    const startDateTime = parseTime(startTime);
+    const endDateTime = parseTime(endTime);
   
-    // Format options for toLocaleTimeString
-    const options = {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-    };
+    const startLocalTime = startDateTime.toFormat('hh:mm a');
+    const endLocalTime = endDateTime.toFormat('hh:mm a');
   
-    // Convert times to local time strings
-    const startLocalTime = startDate.toLocaleTimeString(undefined, options);
-    const endLocalTime = endDate.toLocaleTimeString(undefined, options);
-  
-    // Combine the converted times
     return `${startLocalTime} - ${endLocalTime}`;
   };
+  
   
   return (
     <div className='flex flex-col items-center gap-5'>
@@ -262,7 +246,7 @@ export default function Timesheet() {
                       <TableCell>{summary.fullName}</TableCell>
                       <TableCell>{summary.date}</TableCell>
                       <TableCell>{summary.totalTime}</TableCell>
-                      <TableCell>{formatTimeSpan(summary.timeSpan)}</TableCell>
+                      <TableCell>{formatTimeSpan(summary.timeSpan, summary.date)}</TableCell>
                     </TableRow>
                   ))
                 ) : (
