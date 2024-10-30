@@ -122,7 +122,6 @@ async function groupByManual(records, startDate, endDate) {
   const adjustedStartDate = new Date(startDate);
   adjustedStartDate.setDate(adjustedStartDate.getDate() + 1);
 
-  const localStartDateStr = formatDateForDisplay(adjustedStartDate);
   const localEndDateStr = formatDateForDisplay(new Date(endDate));
 
   return [{
@@ -181,7 +180,8 @@ export default async function handler(req, res) {
       });
       groupedRecords = await groupByManual(paymentRecords, startDate, endDate);
 
-    } else if (payoutMethod === 'Automatic') {
+    } 
+    else if (payoutMethod === 'Automatic') {
       paymentRecords = await prisma.paymentRecord.findMany({
         where: {
           employeeId,
@@ -204,14 +204,18 @@ export default async function handler(req, res) {
           status: record.status,
           isComplete: true,
         }));
-      } else if (payoutFrequency === 'Bi-Monthly') {
+      } 
+      else if (payoutFrequency === 'Bi-Monthly') {
         groupedRecords = groupByBiMonthly(paymentRecords);
-      } else if (payoutFrequency === 'Monthly') {
+      } 
+      else if (payoutFrequency === 'Monthly') {
         groupedRecords = groupByMonthly(paymentRecords);
-      } else {
+      } 
+      else {
         return res.status(400).json({ message: 'Invalid payout frequency for Automatic' });
       }
-    } else {
+    } 
+    else {
       return res.status(400).json({ message: 'Invalid payout method or missing date range for Manual' });
     }
 
@@ -219,7 +223,8 @@ export default async function handler(req, res) {
       groupedRecords,
       paymentRecords,
     });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Error fetching payout records:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }

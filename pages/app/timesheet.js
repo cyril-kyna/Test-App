@@ -1,8 +1,10 @@
 import { Formik, Form, Field } from 'formik';
 import { Button } from '@/components/ui/button';
+import ExcelUploader from '@/components/ui/excel-uploader';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
+import * as XLSX from 'xlsx'; // Import XLSX for handling Excel files
 
 export default function Timesheet() {
   const { data: session, status } = useSession();
@@ -71,6 +73,13 @@ export default function Timesheet() {
       setButtonLoading(''); // Reset loading state
     }
   };
+  // Function to export daily summaries as Excel
+  const handleExport = () => {
+    const worksheet = XLSX.utils.json_to_sheet(dailySummaries);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheet");
+    XLSX.writeFile(workbook, "timesheet.xlsx");
+  };
 
   const isTimeInDisabled = lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
   const isBreakDisabled = lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
@@ -88,6 +97,15 @@ export default function Timesheet() {
       <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
         Timesheet
       </h1>
+
+      {/* Import and Export Buttons */}
+      <div className="flex flex-col gap-4 mb-4">
+      {/* File Input for Importing Excel */}
+        <ExcelUploader />
+        <Button onClick={handleExport} className="min-w-28">
+          Export Your Timesheet
+        </Button>
+      </div>
 
       {/* Status Message */}
       {lastAction === 'TIME_OUT' ? (

@@ -15,7 +15,6 @@ export default function Payout() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Function to fetch payment records based on selected payout options
-  // Function to fetch payment records based on selected payout options
   const fetchPaymentRecords = useCallback(async (payoutMethod, payoutFrequency, dateRange) => {
     setIsLoading(true);
     try {
@@ -51,41 +50,6 @@ export default function Payout() {
       setIsLoading(false);
     }
   }, []);
-  
-
-  const markAsPaid = async () => {
-    const recordIds = paymentRecords.flatMap(record => record.paymentRecordIds || []);
-  
-    console.log("Record IDs to mark as paid:", recordIds); // Log filtered IDs for verification
-  
-    if (recordIds.length === 0) {
-      console.warn("No valid record IDs to mark as paid.");
-      return;
-    }
-  
-    try {
-      const response = await fetch('/api/payout/mark-paid', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ records: recordIds }),
-      });
-  
-      if (response.ok) {
-        console.log("Successfully marked records as paid.");
-        setPaymentRecords(prevRecords => 
-          prevRecords.map(record => ({ ...record, status: 'Paid' }))
-        );
-      } else {
-        console.error('Error marking records as paid:', response.statusText);
-      }
-    } catch (error) {
-      console.error('Error marking records as paid:', error);
-    }
-  };
-  
-  
   
   return (
     <div className="flex flex-col gap-10 mt-28">
@@ -251,11 +215,6 @@ export default function Payout() {
                 </TableBody>
               </Table>
             </div>
-            {/* {paymentRecords.length > 0 && (
-              <Button onClick={markAsPaid} className="mt-4" disabled={isLoading}>
-                Mark as Paid
-              </Button>
-            )} */}
           </div>
         </div>
       </div>
