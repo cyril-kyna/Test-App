@@ -203,7 +203,7 @@ async function validateAndProcessLogs(employeeId, logs) {
   const validActions = ["TIME_IN", "BREAK", "TIME_OUT"];
   const dailyLogs = {};
 
-  for (const log of logs) {
+  for (const log of processedLogs) {
     const { Date: dateStr, Type: type, Time: timeStr } = log;
     const formattedType = type.toUpperCase();
     
