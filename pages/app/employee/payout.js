@@ -97,7 +97,7 @@ export default function Payout() {
           Employee Name: <u> {session ? `${session.user.firstName} ${session.user.lastName}` : "Guest"} </u>
         </p>
       </div>
-      <div className="flex flex-col gap-5 bg-card min-w-[65rem] min-h-[33rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
+      <div className="flex flex-col mb-40 gap-5 bg-card min-w-[65rem] min-h-[33rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
         <EmployeeNavbar/>
         <div className='flex flex-row gap-10 items-start justify-between'>
           <div className='flex flex-col gap-3'>
