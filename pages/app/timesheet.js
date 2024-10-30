@@ -27,34 +27,40 @@ export default function Timesheet() {
   const [totalPages, setTotalPages] = useState(1);
   const [isPageLoading, setIsPageLoading] = useState(false); // Track page loading state for pagination
   const [importSuccessMessage, setImportSuccessMessage] = useState(''); 
+  const [dataFetched, setDataFetched] = useState(false); 
+  const [mounted, setMounted] = useState(false);
 
   // Fetch timesheet data to determine last action and daily summaries
   const fetchTimesheetData = useCallback(async (page = 1) => {
-    if (session) {
-      setIsPageLoading(true); // Start loading state for page fetch
+    if (session && (!dataFetched || page !== currentPage)) { // Add condition here
+      setIsPageLoading(true);
       try {
         const res = await fetch(`/api/timesheet/get-summary?page=${page}`);
-        if (!res.ok) {
-          throw new Error('Failed to fetch timesheet summary');
-        }
+        if (!res.ok) throw new Error('Failed to fetch timesheet summary');
+  
         const data = await res.json();
         setLastAction(data.lastAction || '');
         setDailySummaries(data.dailySummaries || []);
         setCurrentPage(data.currentPage);
         setTotalPages(data.totalPages);
+        setDataFetched(true); // Mark as fetched
       } catch (error) {
         console.error('Error fetching timesheet data:', error);
       } finally {
         setLoading(false);
-        setIsPageLoading(false); // End loading state for page fetch
+        setIsPageLoading(false);
       }
     }
-  }, [session]);
+  }, [session, currentPage, dataFetched]);
 
   useEffect(() => {
     fetchTimesheetData(currentPage);
+    setMounted(true);
   }, [session, fetchTimesheetData, currentPage]);
-
+  if (!mounted) {
+    // Return null or a loading indicator to prevent hydration issues
+    return null;
+  }
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
       if (!session && status !== 'loading') {
@@ -116,27 +122,6 @@ export default function Timesheet() {
   const isBreakDisabled = disableButtons || lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
   const isTimeOutDisabled = disableButtons || lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
 
-  const formatTimeSpan = (timespan, date) => {
-    const [startTime, endTime] = timespan.split(' - ');
-  
-    const parseTime = (timeStr) => {
-      // Combine the date and time
-      const dateTimeStr = `${date} ${timeStr}`;
-      // Parse the combined date and time string
-      return DateTime.fromFormat(dateTimeStr, 'EEE, MMM dd, yyyy hh:mm a', { zone: 'UTC' })
-        .setZone(DateTime.local().zoneName); // Convert to local timezone
-    };
-  
-    const startDateTime = parseTime(startTime);
-    const endDateTime = parseTime(endTime);
-  
-    const startLocalTime = startDateTime.toFormat('hh:mm a');
-    const endLocalTime = endDateTime.toFormat('hh:mm a');
-  
-    return `${startLocalTime} - ${endLocalTime}`;
-  };
-  
-  
   return (
     <div className='flex flex-col items-center gap-5'>
       <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
@@ -246,7 +231,7 @@ export default function Timesheet() {
                       <TableCell>{summary.fullName}</TableCell>
                       <TableCell>{summary.date}</TableCell>
                       <TableCell>{summary.totalTime}</TableCell>
-                      <TableCell>{formatTimeSpan(summary.timeSpan, summary.date)}</TableCell>
+                      <TableCell>{summary.timeSpan}</TableCell>
                     </TableRow>
                   ))
                 ) : (
