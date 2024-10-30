@@ -1,127 +1,42 @@
 import { PrismaClient } from '@prisma/client';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { getEmployeeId } from '@/lib/helpers';
 
 const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
-  const session = await getServerSession(req, res, authOptions);
-  const employeeNo = session?.user.employeeID;
-  const { action } = req.body;
-
-  if (!employeeNo) {
-    return res.status(401).json({ message: 'Unauthorized, employee not found' });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
-
-  if (req.method === 'POST') {
-    try {
-      const employee = await prisma.employee.findUnique({
-        where: { employeeNo },
-      });
-
-      if (!employee) {
-        return res.status(404).json({ message: 'Employee not found' });
-      }
-      const { action, logs } = req.body;
-      const employeeId = employee.id;
-      const currentTime = new Date(); // UTC by default
-      const today = new Date();
-      today.setUTCHours(0, 0, 0, 0); // Set to midnight UTC
-
-      if (logs) {
-        const validationResult = await validateAndProcessLogs(employeeId, logs);
-        if (validationResult.error) {
-          return res.status(400).json({ message: validationResult.message });
-        }
-        return res.status(201).json({ message: 'Logs imported successfully' });
-      }
-
-      // Get the latest entry for today
-      const latestEntry = await prisma.timesheet.findFirst({
-        where: {
-          employeeID: employeeId,
-          time: {
-            gte: today,
-            lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-          },
-        },
-        orderBy: { time: 'desc' },
-      });
-
-      let newEntry;
-
-      if (action === 'TIME_IN') {
-        if (latestEntry && latestEntry.type === 'TIME_OUT') {
-          return res.status(400).json({ message: 'You cannot Time In after Time Out for today' });
-        }
-
-        newEntry = await prisma.timesheet.create({
-          data: {
-            type: 'TIME_IN',
-            employeeID: employeeId,
-            time: currentTime,
-          },
-        });
-
-        await prisma.dailySummary.upsert({
-          where: { employeeId_date: { employeeId, date: today } },
-          update: {},
-          create: {
-            employeeId,
-            date: today,
-            totalTime: 0,
-          },
-        });
-
-      } 
-      else if (action === 'BREAK') {
-        if (!latestEntry || latestEntry.type !== 'TIME_IN') {
-          return res.status(400).json({ message: 'You must Time In before taking a Break' });
-        }
-
-        newEntry = await prisma.timesheet.create({
-          data: {
-            type: 'BREAK',
-            employeeID: employeeId,
-            time: currentTime,
-          },
-        });
-
-        await calculateTotalTime(employeeId, today, currentTime, 'BREAK');
-
-      } 
-      else if (action === 'TIME_OUT') {
-        if (!latestEntry || latestEntry.type !== 'TIME_IN') {
-          return res.status(400).json({ message: 'You must Time In before Time Out' });
-        }
-
-        newEntry = await prisma.timesheet.create({
-          data: {
-            type: 'TIME_OUT',
-            employeeID: employeeId,
-            time: currentTime,
-          },
-        });
-
-        await calculateTotalTime(employeeId, today, currentTime, 'TIME_OUT');
-      } 
-      else {
-        return res.status(400).json({ message: 'Invalid action' });
-      }
-
-      return res.status(201).json({ message: `${action} logged`, timesheet: newEntry });
+  try {
+    const employeeId = await getEmployeeId(req, res);
+    const { action, logs } = req.body;
+    // Check if request is a Timesheet Excel Log or Normal Timesheet Actions
+    if (logs) {
+      // Treat logs as a batch request
+      const result = await validateAndProcessLogs(employeeId, logs);
+      if (result.error) return res.status(400).json({ message: result.message });
+      return res.status(201).json({ message: 'Logs imported successfully' });
+    }
+    else if (action) {
+      // Treat action as a single entry
+      const now = new Date();
+      const localDate = now.toLocaleDateString('en-CA');
+      const localTime = now.toLocaleTimeString('en-GB', { hour12: false });
+      const timesheetAction = [{ Type: action, Date: localDate, Time: localTime }];
+      const result = await processEntries(employeeId, timesheetAction);
+      if (result.error) return res.status(400).json({ message: result.message });
+      return res.status(201).json({ message: `${action} logged successfully` });
     } 
-    catch (error) {
-      console.error('Error logging timesheet:', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
+    else {
+      return res.status(400).json({ message: 'Invalid request: either logs or action is required' });
     }
   } 
-  else {
-    return res.status(405).json({ message: 'Method Not Allowed' });
+  catch (error) {
+    console.error('Error handling timesheet request:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
   }
 }
 
-// Helper function to validate and process logs for import
 async function validateAndProcessLogs(employeeId, logs) {
   console.log("Received logs:", logs);
 
@@ -299,7 +214,6 @@ async function validateAndProcessLogs(employeeId, logs) {
   return { error: false };
 }
 
-// Helper function to calculate total time of an excel
 function calculateTotalTimeForLogs(entries) {
   let totalTime = 0;
   let lastTimeIn = null;
@@ -316,47 +230,101 @@ function calculateTotalTimeForLogs(entries) {
   return totalTime;
 }
 
-// Helper function to calculate total time and update daily summary
-async function calculateTotalTime(employeeId, today, currentTime, actionType) {
+// Function to process single action entries
+async function processEntries(employeeId, entries) {
+  // Entries is an array with a single action
+  const entry = entries[0];
+
+  // Convert the entry into processed format with UTC timestamp
+  const processedEntry = {
+    type: entry.Type.toUpperCase(),
+    time: new Date(`${entry.Date}T${entry.Time}`).toISOString(), // Ensure time is in UTC format
+    employeeID: employeeId,
+  };
+
+  // Validate the action
+  const validAction = validateAction(processedEntry.type);
+  if (validAction.error) {
+    return validAction;
+  }
+
   try {
-    const timesheetEntries = await prisma.timesheet.findMany({
-      where: {
-        employeeID: employeeId,
-        time: {
-          gte: today,
-          lt: new Date(today.getTime() + 24 * 60 * 60 * 1000),
-        },
-      },
-      orderBy: { time: 'asc' },
+    // Create the timesheet entry
+    await prisma.timesheet.create({
+      data: processedEntry,
     });
 
-    let totalTime = 0;
-    let lastTimeIn = null;
+    // Calculate total time for the day
+    const totalTime = await calculateTotalTime(employeeId, processedEntry);
 
-    timesheetEntries.forEach((entry) => {
-      if (entry.type === 'TIME_IN') {
-        lastTimeIn = new Date(entry.time);
-      } else if (lastTimeIn && (entry.type === 'BREAK' || entry.type === 'TIME_OUT')) {
-        totalTime += (new Date(entry.time) - lastTimeIn) / 1000;
-        lastTimeIn = null;
-      }
-    });
+    // Update or create the daily summary
+    const logDate = new Date(processedEntry.time);
+    logDate.setHours(0, 0, 0, 0);
 
     await prisma.dailySummary.upsert({
-      where: { employeeId_date: { employeeId, date: today } },
-      update: {
-        totalTime: totalTime,
-      },
-      create: {
-        employeeId,
-        date: today,
-        totalTime: totalTime,
-      },
+      where: { employeeId_date: { employeeId, date: logDate } },
+      update: { totalTime },
+      create: { employeeId, date: logDate, totalTime },
     });
 
-    return totalTime;
+    return { error: false };
   } catch (error) {
-    console.error(`Error calculating total time for ${actionType}:`, error);
-    throw new Error('Error calculating total time');
+    console.error('Error processing entry:', error);
+    return { error: true, message: 'Failed to process entry' };
   }
+}
+
+// Function to validate a single action
+function validateAction(actionType) {
+  const validActions = ['TIME_IN', 'BREAK', 'TIME_OUT'];
+  if (!validActions.includes(actionType)) {
+    return { error: true, message: `Invalid action type: ${actionType}` };
+  }
+  return { success: true };
+}
+
+// Function to calculate total time for the day based on single action
+async function calculateTotalTime(employeeId, newEntry) {
+  // Fetch today's entries from the database
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEnd = new Date(todayStart);
+  todayEnd.setDate(todayEnd.getDate() + 1);
+
+  // Fetch existing timesheet entries for today
+  let timesheetEntries = await prisma.timesheet.findMany({
+    where: {
+      employeeID: employeeId,
+      time: {
+        gte: todayStart,
+        lt: todayEnd,
+      },
+    },
+    orderBy: { time: 'asc' },
+  });
+
+  // Append the new entry to today's entries for accurate calculation
+  timesheetEntries.push(newEntry);
+
+  // Calculate total active time based on the sequence of entries
+  let totalTime = 0;
+  let lastTimeIn = null;
+
+  // Sort entries by time
+  timesheetEntries.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  timesheetEntries.forEach((entry) => {
+    if (entry.type === 'TIME_IN') {
+      lastTimeIn = new Date(entry.time);
+    } else if (lastTimeIn && (entry.type === 'BREAK' || entry.type === 'TIME_OUT')) {
+      const intervalTime = (new Date(entry.time) - lastTimeIn) / 1000; // Convert to seconds
+      totalTime += intervalTime;
+      lastTimeIn = null;
+    }
+  });
+
+  // Ensure totalTime is an integer
+  totalTime = Math.floor(totalTime);
+
+  return totalTime;
 }

@@ -19,14 +19,12 @@ export default function Timesheet() {
   const { data: session, status } = useSession();
   const [lastAction, setLastAction] = useState(''); // Store last action (TIME_IN, BREAK, TIME_OUT)
   const [dailySummaries, setDailySummaries] = useState([]); // Store array of daily summaries
-  const [loading, setLoading] = useState(true); // Track loading state
   const [buttonLoading, setButtonLoading] = useState(''); // Track which button is loading
   const [disableButtons, setDisableButtons] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isPageLoading, setIsPageLoading] = useState(false); // Track page loading state for pagination
   const [importSuccessMessage, setImportSuccessMessage] = useState(''); 
-  const [dataFetched, setDataFetched] = useState(false); 
   const [mounted, setMounted] = useState(false);
 
   // Fetch timesheet data to determine last action and daily summaries
@@ -48,7 +46,6 @@ export default function Timesheet() {
         console.error('Error fetching timesheet data:', error);
       } 
       finally {
-        setLoading(false);
         setIsPageLoading(false);
       }
     }
@@ -101,11 +98,23 @@ export default function Timesheet() {
     }
   };
 
-  const handleExport = () => {
-    const worksheet = XLSX.utils.json_to_sheet(dailySummaries);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Timesheet");
-    XLSX.writeFile(workbook, "timesheet.xlsx");
+  const handleExport = async () => {
+    // Fetch all summaries specifically for export
+    try {
+      const res = await fetch(`/api/timesheet/get-summary?export=true`); // Add a query parameter to request all data for export
+      if (!res.ok) throw new Error('Failed to fetch all timesheet summaries for export');
+
+      const exportData = await res.json();
+      const fullSummaries = exportData.dailySummaries || [];
+
+      // Convert all data to a sheet and export
+      const worksheet = XLSX.utils.json_to_sheet(fullSummaries);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Full_Timesheet");
+      XLSX.writeFile(workbook, "daily_summary_records.xlsx");
+    } catch (error) {
+      console.error('Error exporting full timesheet data:', error);
+    }
   };
 
   const onImportSuccess = async (isTodayIncluded) => {
@@ -130,7 +139,7 @@ export default function Timesheet() {
         Timesheet
       </h1>
       <div className='flex flex-row gap-20'>
-        <div className='flex flex-col gap-5'>
+        <div className='flex flex-col gap-5 min-w-[43rem]'>
           {/* Import and Export Buttons */}
           <div className="flex flex-col gap-4 min-w-[15rem]">
             {/* Success Message */}
@@ -149,7 +158,7 @@ export default function Timesheet() {
           {/* Timesheet Actions Form */}
           <Formik initialValues={{ action: '' }} onSubmit={handleSubmit}>
             {({ setFieldValue }) => (
-              <Form className="flex flex-col justify-center items-center gap-5 bg-card w-fit p-10 rounded-xl border-[1px] border-zinc-700">
+              <Form className="flex flex-col justify-center items-center gap-5 bg-card p-10 rounded-xl border-[1px] border-zinc-700">
                 {/* Timesheet Status Message */}
                 {lastAction === 'TIME_OUT' ? (
                   <p className='text-primary'>

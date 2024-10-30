@@ -21,7 +21,6 @@ function formatDateForDisplay(date) {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
-    timeZone: 'UTC',
   });
 }
 
@@ -58,22 +57,25 @@ async function getAllDailySummaries(employeeId) {
 }
 
 // Helper function to get the start and end of the current day in UTC
-function getUTCDateRange() {
+function getLocalDateRange() {
   const now = new Date();
+
+  // Start of today in local time at midnight
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   
-  // Start of today in UTC
-  const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0));
-  
-  // Start of tomorrow in UTC
-  const startOfTomorrowUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
-  
-  return { start: startOfTodayUTC, end: startOfTomorrowUTC };
+  // End of today in local time just before midnight
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+
+  console.log("Start of Today (Local):", startOfToday);
+  console.log("End of Today (Local):", endOfToday);
+
+  return { start: startOfToday, end: endOfToday };
 }
 
-// Helper function to fetch the latest action for today
+// Helper function to fetch the latest action for today in local time
 async function getLastActionToday(employeeId) {
-  const { start, end } = getUTCDateRange();
-  
+  const { start, end } = getLocalDateRange();
+
   const latestTimesheetEntry = await prisma.timesheet.findFirst({
     where: {
       employeeID: employeeId,
@@ -83,8 +85,15 @@ async function getLastActionToday(employeeId) {
       },
     },
     orderBy: { time: 'desc' },
-    select: { type: true },
+    select: { type: true, time: true }, // Select time to log it
   });
+
+  if (latestTimesheetEntry) {
+    console.log("Latest Action:", latestTimesheetEntry.type);
+    console.log("Action Timestamp:", latestTimesheetEntry.time);
+  } else {
+    console.log("No actions found for today.");
+  }
 
   return latestTimesheetEntry ? latestTimesheetEntry.type : '';
 }
@@ -97,7 +106,7 @@ export default async function handler(req, res) {
   }
 
   const employeeNo = session.user.employeeID;
-  const { page = 1, limit = 10 } = req.query;
+  const { page = 1, limit = 10, export: exportAll } = req.query; // Add export query parameter
   const skip = (page - 1) * limit;
 
   try {
@@ -110,17 +119,15 @@ export default async function handler(req, res) {
     const { id: employeeId, firstName, lastName } = employee;
     const fullName = `${firstName} ${lastName}`;
 
-    // Fetch all daily summaries for the employee
-    const dailySummaries = await prisma.dailySummary.findMany({
-      where: {
-        employeeId,
-      },
-      orderBy: {
-        date: 'desc',
-      },
-      skip,
-      take: parseInt(limit), // Limit results to the specified or default limit
-    });
+    // If export is true, fetch all daily summaries without pagination
+    const dailySummaries = exportAll
+      ? await getAllDailySummaries(employeeId) // Fetch all summaries for export
+      : await prisma.dailySummary.findMany({
+          where: { employeeId },
+          orderBy: { date: 'desc' },
+          skip,
+          take: parseInt(limit), // Limit results if not exporting all
+        });
 
     // Fetch the last action for today
     const lastAction = await getLastActionToday(employeeId);
@@ -132,6 +139,7 @@ export default async function handler(req, res) {
         dailySummaries: [],
       });
     }
+
     // Format summaries for the response
     const formattedSummaries = dailySummaries.map((summary) => ({
       fullName,
@@ -140,18 +148,19 @@ export default async function handler(req, res) {
       timeSpan: formatTimeForDisplay(summary.createdAt) + ' - ' + formatTimeForDisplay(summary.updatedAt),
     }));
 
-    // Get total summaries count for pagination
-    const totalSummaries = await prisma.dailySummary.count({
-      where: { employeeId },
-    });
+    // Get total summaries count for pagination if not exporting
+    const totalSummaries = exportAll
+      ? formattedSummaries.length
+      : await prisma.dailySummary.count({
+          where: { employeeId },
+        });
 
     return res.status(200).json({
       lastAction,
       dailySummaries: formattedSummaries,
-      totalPages: Math.ceil(totalSummaries / limit),
-      currentPage: parseInt(page),
+      totalPages: exportAll ? 1 : Math.ceil(totalSummaries / limit),
+      currentPage: exportAll ? 1 : parseInt(page),
     });
-
   } catch (error) {
     console.error('Error fetching timesheet summaries:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
