@@ -97,6 +97,8 @@ export default async function handler(req, res) {
   }
 
   const employeeNo = session.user.employeeID;
+  const { page = 1, limit = 10 } = req.query;
+  const skip = (page - 1) * limit;
 
   try {
     // Fetch employee details
@@ -109,7 +111,16 @@ export default async function handler(req, res) {
     const fullName = `${firstName} ${lastName}`;
 
     // Fetch all daily summaries for the employee
-    const dailySummaries = await getAllDailySummaries(employeeId);
+    const dailySummaries = await prisma.dailySummary.findMany({
+      where: {
+        employeeId,
+      },
+      orderBy: {
+        date: 'desc',
+      },
+      skip,
+      take: parseInt(limit), // Limit results to the specified or default limit
+    });
 
     // Fetch the last action for today
     const lastAction = await getLastActionToday(employeeId);
@@ -121,29 +132,24 @@ export default async function handler(req, res) {
         dailySummaries: [],
       });
     }
+    // Format summaries for the response
+    const formattedSummaries = dailySummaries.map((summary) => ({
+      fullName,
+      date: formatDateForDisplay(summary.date),
+      totalTime: formatTimeInHHMMSS(summary.totalTime),
+      timeSpan: formatTimeForDisplay(summary.createdAt) + ' - ' + formatTimeForDisplay(summary.updatedAt),
+    }));
 
-    // Map through each daily summary to format the response
-    const formattedSummaries = dailySummaries.map((summary) => {
-      const summaryDate = new Date(summary.date);
-      const timeIn = formatTimeForDisplay(summary.createdAt);
-      const timeOut = formatTimeForDisplay(summary.updatedAt);
-      const timeSpan = timeOut ? `${timeIn} to ${timeOut}` : `${timeIn}`; // Handle cases with only TIME_IN
-      const totalTimeFormatted = formatTimeInHHMMSS(summary.totalTime);
-
-      return {
-        fullName,
-        totalTime: totalTimeFormatted,
-        timeSpan,
-        date: formatDateForDisplay(summaryDate),
-        createdAt: summary.createdAt, // Optional: Include raw dates if needed
-        updatedAt: summary.updatedAt, // Optional: Include raw dates if needed
-      };
+    // Get total summaries count for pagination
+    const totalSummaries = await prisma.dailySummary.count({
+      where: { employeeId },
     });
 
-    // Respond with the formatted daily summaries and last action
     return res.status(200).json({
       lastAction,
       dailySummaries: formattedSummaries,
+      totalPages: Math.ceil(totalSummaries / limit),
+      currentPage: parseInt(page),
     });
 
   } catch (error) {

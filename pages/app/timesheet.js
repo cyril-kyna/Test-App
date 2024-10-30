@@ -4,7 +4,15 @@ import ExcelUploader from '@/components/ui/excel-uploader';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
-import * as XLSX from 'xlsx'; // Import XLSX for handling Excel files
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationPrevious,
+  PaginationNext,
+} from '@/components/ui/pagination';
+import * as XLSX from 'xlsx';
 
 export default function Timesheet() {
   const { data: session, status } = useSession();
@@ -12,30 +20,35 @@ export default function Timesheet() {
   const [dailySummaries, setDailySummaries] = useState([]); // Store array of daily summaries
   const [loading, setLoading] = useState(true); // Track loading state
   const [buttonLoading, setButtonLoading] = useState(''); // Track which button is loading
+  const [disableButtons, setDisableButtons] = useState(false); 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Fetch timesheet data to determine last action and daily summaries
-  const fetchTimesheetData = useCallback(async () => {
+  const fetchTimesheetData = useCallback(async (page = 1) => {
     if (session) {
       try {
-        const res = await fetch('/api/timesheet/get-summary');
+        const res = await fetch(`/api/timesheet/get-summary?page=${page}`);
         if (!res.ok) {
           throw new Error('Failed to fetch timesheet summary');
         }
         const data = await res.json();
         setLastAction(data.lastAction || '');
         setDailySummaries(data.dailySummaries || []);
+        setCurrentPage(data.currentPage);
+        setTotalPages(data.totalPages);
       } catch (error) {
         console.error('Error fetching timesheet data:', error);
       } 
       finally {
-        setTimeout(() => setLoading(false), 1000);
+        setLoading(false);
       }
     }
   }, [session]);
 
   useEffect(() => {
-    fetchTimesheetData();
-  }, [session, fetchTimesheetData]);
+    fetchTimesheetData(currentPage);
+  }, [session, fetchTimesheetData, currentPage]);
 
   const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
@@ -44,15 +57,13 @@ export default function Timesheet() {
         return;
       }
 
-      setButtonLoading(values.action); // Show loading state on the current action button
+      setButtonLoading(values.action);
       const res = await fetch('/api/timesheet/insert-timesheet', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          action: values.action,
-        }),
+        body: JSON.stringify({ action: values.action }),
       });
 
       if (!res.ok) {
@@ -61,19 +72,16 @@ export default function Timesheet() {
         return;
       }
 
-      // Refetch the timesheet data to update lastAction and daily summaries (including total time)
-      await fetchTimesheetData();
+      await fetchTimesheetData(currentPage);
       resetForm();
-    } 
-    catch (error) {
+    } catch (error) {
       console.error('Error submitting timesheet:', error);
-    } 
-    finally {
+    } finally {
       setSubmitting(false);
-      setButtonLoading(''); // Reset loading state
+      setButtonLoading('');
     }
   };
-  // Function to export daily summaries as Excel
+
   const handleExport = () => {
     const worksheet = XLSX.utils.json_to_sheet(dailySummaries);
     const workbook = XLSX.utils.book_new();
@@ -81,9 +89,21 @@ export default function Timesheet() {
     XLSX.writeFile(workbook, "timesheet.xlsx");
   };
 
-  const isTimeInDisabled = lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
-  const isBreakDisabled = lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
-  const isTimeOutDisabled = lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
+  const onImportSuccess = (isTodayIncluded) => {
+    alert('Logs imported successfully!');
+    if (isTodayIncluded) {
+      setDisableButtons(true);
+    }
+    window.location.reload();
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+  };
+
+  const isTimeInDisabled = disableButtons || lastAction === 'TIME_IN' || lastAction === 'TIME_OUT';
+  const isBreakDisabled = disableButtons || lastAction !== 'TIME_IN' || lastAction === 'TIME_OUT';
+  const isTimeOutDisabled = disableButtons || lastAction === 'TIME_OUT' || lastAction === '' || lastAction === 'BREAK';
 
   if (loading) {
     return (
@@ -92,6 +112,7 @@ export default function Timesheet() {
       </div>
     );
   }
+
   return (
     <div className='flex flex-col items-center gap-5'>
       <h1 className="mt-40 text-[var(--white)] text-center text-[5rem] font-[900] uppercase">
@@ -100,8 +121,7 @@ export default function Timesheet() {
 
       {/* Import and Export Buttons */}
       <div className="flex flex-col gap-4 mb-4">
-      {/* File Input for Importing Excel */}
-        <ExcelUploader />
+        <ExcelUploader onImportSuccess={onImportSuccess} />
         <Button onClick={handleExport} className="min-w-28">
           Export Your Timesheet
         </Button>
@@ -120,17 +140,14 @@ export default function Timesheet() {
         <p className='text-xl text-primary'>
           Your time is now running. Click <b>Break</b> if you want to pause, or <b>Time out</b> if you are done.
         </p>
-      ) : 
+      ) : (
         <p className='text-xl text-primary'>
           Click <b>Time In</b> if you want to start.
         </p>
-      }
+      )}
 
       {/* Time In/Out/Break Form */}
-      <Formik
-        initialValues={{ action: '' }}
-        onSubmit={handleSubmit}
-      >
+      <Formik initialValues={{ action: '' }} onSubmit={handleSubmit}>
         {({ setFieldValue }) => (
           <Form className="flex flex-row justify-center gap-5 bg-background w-fit p-10 rounded-xl border-[1px] border-zinc-700">
             <Button
@@ -191,9 +208,9 @@ export default function Timesheet() {
                 dailySummaries.map((summary, index) => (
                   <TableRow key={index}>
                     <TableCell>{summary.fullName}</TableCell>
-                    <TableCell>{summary.date}</TableCell> {/* Convert date to local time */}
+                    <TableCell>{summary.date}</TableCell>
                     <TableCell>{summary.totalTime}</TableCell>
-                    <TableCell>{summary.timeSpan}</TableCell> {/* Convert time span to local time */}
+                    <TableCell>{summary.timeSpan}</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -206,6 +223,31 @@ export default function Timesheet() {
             </TableBody>
           </Table>
         </div>
+        {/* Pagination Component */}
+        <Pagination className="mt-4">
+          <PaginationContent>
+            {currentPage > 1 && (
+              <PaginationPrevious onClick={() => handlePageChange(currentPage - 1)}>
+                Previous
+              </PaginationPrevious>
+            )}
+            {[...Array(totalPages)].map((_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  isActive={currentPage === i + 1}
+                  onClick={() => handlePageChange(i + 1)}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+            {currentPage < totalPages && (
+              <PaginationNext onClick={() => handlePageChange(currentPage + 1)}>
+                Next
+              </PaginationNext>
+            )}
+          </PaginationContent>
+        </Pagination>
       </div>
     </div>
   );

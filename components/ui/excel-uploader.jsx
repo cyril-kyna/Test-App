@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import { cn } from '@/lib/utils';
 
-export default function ExcelUploader() {
+export default function ExcelUploader({ onImportSuccess }) {
   const [error, setError] = useState(null); // To store error messages
   const [files, setFiles] = useState([]); // To store uploaded file references
 
@@ -15,13 +15,10 @@ export default function ExcelUploader() {
 
       reader.onload = async (e) => {
         try {
-          console.log("Reading file...");
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const jsonData = XLSX.utils.sheet_to_json(worksheet);
-          
-          console.log("File read successfully. Validating structure...");
 
           // Validate structure before sending
           const isValid = validateExcelData(jsonData);
@@ -29,8 +26,6 @@ export default function ExcelUploader() {
             setError("Invalid Excel format. Ensure it has 'Date', 'Type', and 'Time' columns with valid data.");
             return;
           }
-
-          console.log("Structure validated. Sending data to server...");
 
           // Send JSON data to API endpoint
           const response = await fetch('/api/timesheet/insert-timesheet', {
@@ -41,14 +36,14 @@ export default function ExcelUploader() {
 
           const result = await response.json();
           if (!response.ok) {
-            // If the server responds with an error, display it
-            console.error("Server responded with error:", result);
             setError(result.message || 'Failed to import logs');
           } else {
             alert('Logs imported successfully!');
+            const isTodayIncluded = checkIfTodayIncluded(jsonData);
+            onImportSuccess(isTodayIncluded); // Notify parent component if today’s logs are present
           }
         } catch (error) {
-          console.error("Unexpected error while processing the file:", error);
+          console.error("Error uploading logs:", error);
           setError("An unexpected error occurred while processing the file. Please check the file format and try again.");
         }
       };
@@ -65,6 +60,12 @@ export default function ExcelUploader() {
     accept: '.xlsx, .xls',
     multiple: false,
   });
+
+  // Helper function to check if today's date is in the uploaded logs
+  const checkIfTodayIncluded = (logs) => {
+    const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD' format
+    return logs.some((log) => log.Date === today);
+  };
 
   // Handler to remove a file
   const handleRemoveFile = (fileToRemove) => {
@@ -83,20 +84,6 @@ export default function ExcelUploader() {
         )}
       >
         <input {...getInputProps()} />
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          strokeWidth="2"
-          stroke="currentColor"
-          className="w-8 h-8 text-muted-foreground"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M12 4.5v15m7.5-7.5h-15M5.25 19.5A2.25 2.25 0 003 17.25v-9A2.25 2.25 0 015.25 6h13.5A2.25 2.25 0 0121 8.25v9a2.25 2.25 0 01-2.25 2.25H5.25z"
-          />
-        </svg>
         <p className="text-sm font-medium text-muted-foreground">
           {isDragActive ? "Drop the Excel file here..." : "Drag and drop an Excel file here, or click to select"}
         </p>
@@ -137,11 +124,9 @@ export default function ExcelUploader() {
 function validateExcelData(data) {
   const requiredColumns = ["Date", "Type", "Time"];
   return data.every((row) => {
-    // Ensure required columns exist and have valid values
     const hasValidColumns = requiredColumns.every((col) => col in row);
     const isValidType = ["TIME_IN", "BREAK", "TIME_OUT"].includes(row.Type?.toUpperCase());
     if (hasValidColumns && isValidType) {
-      // Normalize Type
       row.Type = row.Type.toUpperCase();
       return true;
     }
