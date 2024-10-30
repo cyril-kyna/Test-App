@@ -55,7 +55,7 @@ export default function Employee() {
   };
   // Function to fetch payment records from the API
   const fetchPaymentRecords = useCallback(async () => {
-    setPaymentRecords([]); // Clear current records to prevent stale data display
+    
     try {
       const response = await fetch(`/api/payrate/get-payments?filter=${filter}`);
       const data = await response.json();
@@ -67,16 +67,18 @@ export default function Employee() {
         });
         // Ensure groupedRecords includes `status`
         setPaymentRecords(data.groupedRecords || []);
-      } else {
+      } 
+      else {
         console.error('Error fetching payment records:', response.statusText);
       }
-    } catch (error) {
+    } 
+    catch (error) {
       console.error('Error fetching payment records:', error);
-    } finally {
+    } 
+    finally {
      setLoading(false);
     }
   }, [filter]);
-  
   
   // Fetch payment records on component mount and when session or filter changes
   useEffect(() => {
@@ -84,6 +86,7 @@ export default function Employee() {
       fetchPaymentRecords();
     }
   }, [session, filter, fetchPaymentRecords]);
+
   if (loading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -101,7 +104,7 @@ export default function Employee() {
           Employee Name: <u> {session ? `${session.user.firstName} ${session.user.lastName}` : "Guest"} </u>
         </p>
       </div>
-      <div className="flex flex-col gap-5 bg-background min-w-[65rem] min-h-[32rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
+      <div className="flex flex-col gap-5 mb-40 bg-card min-w-[65rem] min-h-[32rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
         <EmployeeNavbar/>
         <div className='flex flex-row gap-10 items-start justify-between'>
           <div className="flex flex-col gap-7">

@@ -15,6 +15,7 @@ export default function Payout() {
   const [isLoading, setIsLoading] = useState(false);
 
   // Function to fetch payment records based on selected payout options
+  // Function to fetch payment records based on selected payout options
   const fetchPaymentRecords = useCallback(async (payoutMethod, payoutFrequency, dateRange) => {
     setIsLoading(true);
     try {
@@ -29,11 +30,18 @@ export default function Payout() {
           dateRange,
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.ok) {
-        setPaymentRecords(data.groupedRecords || []);
+        // Merge the `groupedRecords` with actual `paymentRecords` ID references
+        const groupedRecordsWithIds = data.groupedRecords.map((group, index) => ({
+          ...group,
+          paymentRecordIds: data.paymentRecords.map(record => record.id) // Collect all IDs
+        }));
+  
+        setPaymentRecords(groupedRecordsWithIds);
+        console.log("Fetched Payment Records:", groupedRecordsWithIds);
       } else {
         console.error('Error fetching payment records:', response.statusText);
       }
@@ -43,7 +51,42 @@ export default function Payout() {
       setIsLoading(false);
     }
   }, []);
+  
 
+  const markAsPaid = async () => {
+    const recordIds = paymentRecords.flatMap(record => record.paymentRecordIds || []);
+  
+    console.log("Record IDs to mark as paid:", recordIds); // Log filtered IDs for verification
+  
+    if (recordIds.length === 0) {
+      console.warn("No valid record IDs to mark as paid.");
+      return;
+    }
+  
+    try {
+      const response = await fetch('/api/payout/mark-paid', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ records: recordIds }),
+      });
+  
+      if (response.ok) {
+        console.log("Successfully marked records as paid.");
+        setPaymentRecords(prevRecords => 
+          prevRecords.map(record => ({ ...record, status: 'Paid' }))
+        );
+      } else {
+        console.error('Error marking records as paid:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error marking records as paid:', error);
+    }
+  };
+  
+  
+  
   return (
     <div className="flex flex-col gap-10 mt-28">
       <div className="flex flex-col items-start">
@@ -54,10 +97,10 @@ export default function Payout() {
           Employee Name: <u> {session ? `${session.user.firstName} ${session.user.lastName}` : "Guest"} </u>
         </p>
       </div>
-      <div className="flex flex-col gap-5 bg-background min-w-[65rem] min-h-[20rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
+      <div className="flex flex-col gap-5 bg-card min-w-[65rem] min-h-[33rem] p-10 rounded-xl border-[1px] border-zinc-700 space-y-4">
         <EmployeeNavbar/>
         <div className='flex flex-row gap-10 items-start justify-between'>
-          <div className='flex flex-col gap-7'>
+          <div className='flex flex-col gap-3'>
             <div className="flex flex-col">
               <h1 className="text-left text-xl font-semibold text-balance">
                 Set payout schedule.
@@ -172,22 +215,23 @@ export default function Payout() {
           {/* Table Display (Separate from Formik) */}
           <div className='flex flex-col min-w-96 gap-2'>
             <div className="flex flex-row justify-between items-center">
-              <h1 className="text-left text-xl font-semibold text-balance">Payout Records</h1>
+              <h1 className="text-left text-xl font-semibold text-balance">Payout Dates</h1>
             </div>
             <div className="flex flex-col gap-7">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-36">Date</TableHead>
+                    <TableHead className="min-w-36">Payout Date</TableHead>
                     <TableHead className="min-w-36">Duration</TableHead>
                     <TableHead className="min-w-36">Payroll Amount</TableHead>
                     <TableHead className="min-w-36">Status</TableHead>
+                    <TableHead className="min-w-36">Completed</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan="4" className="text-center py-10">Loading...</TableCell>
+                      <TableCell colSpan="5" className="text-center py-10">Loading...</TableCell>
                     </TableRow>
                   ) : paymentRecords.length > 0 ? (
                     paymentRecords.map((record, index) => (
@@ -196,16 +240,22 @@ export default function Payout() {
                         <TableCell>{record.duration.toFixed(2)} hrs</TableCell>
                         <TableCell>${record.payAmount.toFixed(2)}</TableCell>
                         <TableCell>{record.status}</TableCell> 
+                        <TableCell>{record.isComplete ? "Complete" : "Incomplete"}</TableCell> 
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan="4" className="text-center py-10">No payouts have been made.</TableCell>
+                      <TableCell colSpan="5" className="text-center py-10">No payouts have been made.</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
+            {/* {paymentRecords.length > 0 && (
+              <Button onClick={markAsPaid} className="mt-4" disabled={isLoading}>
+                Mark as Paid
+              </Button>
+            )} */}
           </div>
         </div>
       </div>

@@ -8,15 +8,6 @@ const prisma = new PrismaClient();
 // Function to format a date into a readable string
 function formatDateForDisplay(date) {
   return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  });
-}
-function formatDateForDisplayManual(date) {
-  return new Date(date).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -24,90 +15,130 @@ function formatDateForDisplayManual(date) {
   });
 }
 
-// Function to group records bi-monthly (1-15 and 16-31 of each month)
 function groupByBiMonthly(records) {
-  const biMonthly = { "1-15": [], "16-31": [] }; // Two periods within the month
+  const biMonthly = {}; // Object to store each month's records separately
 
-  // Categorize records into the first or second half of the month
+  // Find the latest date in the payment records
+  const latestDate = new Date(
+    Math.max(...records.map(record => new Date(record.date)))
+  );
+
   records.forEach((record) => {
     const date = new Date(record.date);
     const day = date.getUTCDate();
-    const monthName = date.toLocaleString('en-US', { month: 'long' }); // Month name
+    const month = date.getUTCMonth(); // Month as a number (0–11)
+    const year = date.getUTCFullYear();
+    const monthKey = `${year}-${month + 1}`; // Unique key for each month in format "YYYY-MM"
 
+    // Initialize each month's bi-monthly periods if not already set
+    if (!biMonthly[monthKey]) {
+      biMonthly[monthKey] = { "1-15": [], "16-31": [] };
+    }
+
+    // Group records into "1-15" or "16-31" for each month
     if (day <= 15) {
-      biMonthly["1-15"].push({ ...record, period: `${monthName} 15th Pay` });
+      biMonthly[monthKey]["1-15"].push({ 
+        ...record, 
+        period: `${date.toLocaleString('en-US', { month: 'long' })} 15, ${year}` 
+      });
     } else {
-      biMonthly["16-31"].push({ ...record, period: `${monthName} 30th Pay` });
+      biMonthly[monthKey]["16-31"].push({ 
+        ...record, 
+        period: `${date.toLocaleString('en-US', { month: 'long' })} 30, ${year}` 
+      });
     }
   });
 
-  // Sum up payAmount and duration for each bi-monthly period
-  return Object.entries(biMonthly).map(([_, recs]) => ({
-    date: recs.length > 0 ? recs[0].period : "", // Use the period label from the first record
-    payAmount: recs.reduce((sum, r) => sum + r.payAmount, 0),
-    duration: recs.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
-    status: "Unpaid",
-  }));
+  // Flag the last group as complete/incomplete based on the latest date
+  return Object.entries(biMonthly).flatMap(([monthKey, periods], index, array) => {
+    const month = monthKey.split('-')[1];
+    const year = monthKey.split('-')[0];
+    const isLastGroup = index === array.length - 1; // Only the last month might be incomplete
+
+    return Object.entries(periods)
+      .filter(([, recs]) => recs.length > 0) // Only include non-empty periods
+      .map(([periodKey, recs]) => {
+        const periodEndDate = new Date(
+          periodKey === "1-15" 
+            ? `${year}-${month}-15T23:59:59Z`
+            : `${year}-${month}-30T23:59:59Z`
+        );
+
+        return {
+          date: recs.length > 0 ? recs[0].period : "",
+          payAmount: recs.reduce((sum, r) => sum + r.payAmount, 0),
+          duration: recs.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+          status: "Unpaid",
+          isComplete: isLastGroup ? periodEndDate <= latestDate : true, // Only the last period is checked against the latest date
+        };
+      });
+  });
 }
 
-// Function to group records monthly (e.g., "October 30th Pay")
+// Function to group records monthly (e.g., "October 30, 2024")
 function groupByMonthly(records) {
   const monthly = {};
 
-  // Group records by month and year
+  // Find the latest date in the payment records
+  const latestDate = new Date(
+    Math.max(...records.map(record => new Date(record.date)))
+  );
+
   records.forEach((record) => {
     const date = new Date(record.date);
-    const monthName = date.toLocaleString('en-US', { month: 'long' }); // Month name
+    const month = date.getUTCMonth(); // Month as a number (0–11)
     const year = date.getUTCFullYear();
-    const key = `${year}-${monthName}`; // Unique key for each month
+    const monthName = date.toLocaleString('en-US', { month: 'long' }); // Month name
+    const key = `${year}-${month + 1}`; // Unique key for each month in format "YYYY-MM"
 
     if (!monthly[key]) {
       monthly[key] = {
-        date: `${monthName} 30th Pay`, // Label as "Month 30th Pay"
+        date: `${monthName} 30, ${year}`, // Label as "Month 30, Year"
         payAmount: 0,
         duration: 0,
         status: "Unpaid",
+        periodEndDate: new Date(`${year}-${month + 1}-30T23:59:59Z`), // Assumed end of month (or 30th)
       };
     }
 
-    monthly[key].payAmount += record.payAmount; // Sum up payAmount for the month
-    monthly[key].duration += (record.dailySummary?.totalTime || 0) / 3600; // Sum up duration in hours
+    monthly[key].payAmount += record.payAmount;
+    monthly[key].duration += (record.dailySummary?.totalTime || 0) / 3600;
   });
 
-  // Return an array of monthly summaries
-  return Object.values(monthly);
+  // Map monthly records to array and determine completeness
+  return Object.values(monthly).map((period, index, array) => {
+    const isLastMonth = index === array.length - 1; // Only check the last month dynamically
+
+    return {
+      ...period,
+      isComplete: isLastMonth ? period.periodEndDate <= latestDate : true, // Check completeness for the last month only
+    };
+  });
 }
+
 
 // Function to filter and group records based on a custom date range
 async function groupByManual(records, startDate, endDate) {
-  // Convert startDate and endDate to local date strings (YYYY-MM-DD format based on locale)
-  const localStartDateStr = new Date(startDate).toLocaleDateString();
-  const localEndDateStr = new Date(endDate).toLocaleDateString();
+  const adjustedStartDate = new Date(startDate);
+  adjustedStartDate.setDate(adjustedStartDate.getDate() + 1);
 
-  // Filter records within the specified date range using only the date portion
-  const filteredRecords = records.filter(record => {
-    const recordDateStr = new Date(record.date).toLocaleDateString();
-    return recordDateStr >= localStartDateStr && recordDateStr <= localEndDateStr;
-  });
+  const localStartDateStr = formatDateForDisplay(adjustedStartDate);
+  const localEndDateStr = formatDateForDisplay(new Date(endDate));
 
-  // Aggregate payAmount and duration within the date range
   return [{
-    date: `${formatDateForDisplayManual(startDate)} - ${formatDateForDisplayManual(endDate)}`,
-    payAmount: filteredRecords.reduce((sum, r) => sum + r.payAmount, 0),
-    duration: filteredRecords.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
+    date: `${localEndDateStr}`,
+    payAmount: records.reduce((sum, r) => sum + r.payAmount, 0),
+    duration: records.reduce((sum, r) => sum + ((r.dailySummary?.totalTime || 0) / 3600), 0),
     status: "Unpaid",
+    isComplete: true, // Manual period completeness depends on the provided range only
   }];
 }
-
-
 
 // Main handler function to process the API request
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method not allowed' });
   }
-
-  console.log("Request Body:", req.body);
 
   try {
     const session = await getServerSession(req, res, authOptions);
@@ -124,22 +155,20 @@ export default async function handler(req, res) {
     let paymentRecords;
 
     if (payoutMethod === 'Manual' && dateRange?.startDate && dateRange?.endDate) {
-      // Set startDate to the start of the day (UTC)
       const startDate = new Date(dateRange.startDate);
-      startDate.setUTCHours(0, 0, 0, 0); // Midnight at UTC on start date
-
-      // Set endDate to midnight of the day after the end date for inclusive filtering
+      startDate.setDate(startDate.getDate() + 1);
+      startDate.setUTCHours(0, 0, 0, 0);
       const endDate = new Date(dateRange.endDate);
-      endDate.setUTCHours(0, 0, 0, 0); // Midnight UTC on end date
-      endDate.setUTCDate(endDate.getUTCDate() + 2); // Move to the next day
+      endDate.setDate(endDate.getDate() + 1);
+      endDate.setUTCHours(23, 59, 59, 999);
 
       paymentRecords = await prisma.paymentRecord.findMany({
         where: {
           employeeId,
           status: 'Unpaid',
           date: {
-            gte: startDate, // Greater than or equal to startDate
-            lte: endDate,    // Less than the day after endDate
+            gte: startDate,
+            lte: endDate
           },
         },
         include: {
@@ -150,15 +179,7 @@ export default async function handler(req, res) {
           },
         },
       });
-      // Adjust startDate and endDate for groupByManual
-      const adjustedStartDate = new Date(startDate);
-      adjustedStartDate.setUTCDate(adjustedStartDate.getUTCDate() + 1); // Add 1 day to start date
-
-      const adjustedEndDate = new Date(endDate);
-      adjustedEndDate.setUTCDate(adjustedEndDate.getUTCDate() - 1); // Subtract 1 day from end date
-
-      // Use the adjusted dates for grouping purposes
-      groupedRecords = await groupByManual(paymentRecords, adjustedStartDate, adjustedEndDate);
+      groupedRecords = await groupByManual(paymentRecords, startDate, endDate);
 
     } else if (payoutMethod === 'Automatic') {
       paymentRecords = await prisma.paymentRecord.findMany({
@@ -181,6 +202,7 @@ export default async function handler(req, res) {
           payAmount: record.payAmount,
           duration: (record.dailySummary?.totalTime || 0) / 3600,
           status: record.status,
+          isComplete: true,
         }));
       } else if (payoutFrequency === 'Bi-Monthly') {
         groupedRecords = groupByBiMonthly(paymentRecords);
@@ -195,6 +217,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       groupedRecords,
+      paymentRecords,
     });
   } catch (error) {
     console.error('Error fetching payout records:', error);

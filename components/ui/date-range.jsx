@@ -18,11 +18,13 @@ export function DatePickerWithRange({ value, onChange, className }) {
   const [dateRange, setDateRange] = React.useState(value);
 
   const handleDateChange = (range) => {
+    if (!range) {
+      return; // Exit early if range is undefined
+    }
     setDateRange(range);
-    // Map `from` to `startDate` and `to` to `endDate` for Formik
     onChange({
-      startDate: range.from,
-      endDate: range.to,
+      startDate: range.from || null, // If undefined, default to null
+      endDate: range.to || null,      // If undefined, default to null
     });
   };
 
