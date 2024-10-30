@@ -124,25 +124,78 @@ export default async function handler(req, res) {
 // Helper function to validate and process logs for import
 async function validateAndProcessLogs(employeeId, logs) {
   console.log("Received logs:", logs);
+
   const processedLogs = logs.map(log => {
     let date = log.Date;
-    
-    // Check if the date is a string and contains slashes or dashes in non-YYYY-MM-DD format
+    let time = log.Time;
+  
+    // Process the date as before...
     if (typeof date === 'string') {
       date = date.replace(/\//g, "-"); // Replace any slashes with dashes
   
       // Convert date format if it matches MM-DD-YYYY or DD-MM-YYYY
       if (/^\d{2}-\d{2}-\d{4}$/.test(date)) {
-        const [month, day, year] = date.split("-");
-        date = `${year}-${month}-${day}`; // Reorder to YYYY-MM-DD
+        const [part1, part2, year] = date.split("-");
+        // Decide if it's MM-DD-YYYY or DD-MM-YYYY based on your locale
+        // For this example, let's assume MM-DD-YYYY
+        date = `${year}-${part1}-${part2}`; // Reorder to YYYY-MM-DD
       } else if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         // Already in YYYY-MM-DD format, leave as is
       }
     }
   
+    // **Process the time**
+    if (typeof time === 'number') {
+      // **Convert the fractional day to a time string**
+      const totalSeconds = Math.round(time * 24 * 60 * 60);
+      let hours = Math.floor(totalSeconds / 3600) % 24;
+      let minutes = Math.floor((totalSeconds % 3600) / 60);
+      let seconds = totalSeconds % 60;
+  
+      // Pad hours, minutes, and seconds with leading zeros
+      const hoursStr = String(hours).padStart(2, '0');
+      const minutesStr = String(minutes).padStart(2, '0');
+      const secondsStr = String(seconds).padStart(2, '0');
+  
+      time = `${hoursStr}:${minutesStr}:${secondsStr}`;
+    } else if (typeof time === 'string') {
+      // **Handle time strings with AM/PM notation**
+      const timeRegex = /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp][Mm])?$/;
+      const match = time.match(timeRegex);
+      if (match) {
+        let [_, hourStr, minuteStr, secondStr = '00', meridiem] = match;
+        let hour = parseInt(hourStr, 10);
+        const minute = parseInt(minuteStr, 10);
+        const second = parseInt(secondStr, 10);
+  
+        if (meridiem) {
+          meridiem = meridiem.toUpperCase();
+          if (meridiem === 'PM' && hour < 12) {
+            hour += 12;
+          } else if (meridiem === 'AM' && hour === 12) {
+            hour = 0;
+          }
+        }
+  
+        // Pad with leading zeros
+        const hoursStr = String(hour).padStart(2, '0');
+        const minutesStr = String(minute).padStart(2, '0');
+        const secondsStr = String(second).padStart(2, '0');
+  
+        time = `${hoursStr}:${minutesStr}:${secondsStr}`;
+      } else {
+        // Time string is in an unexpected format
+        console.warn(`Unrecognized time format: ${time}`);
+      }
+    } else {
+      // Time is neither a number nor a string
+      console.warn(`Invalid time value: ${time}`);
+    }
+  
     return {
       ...log,
-      Date: date
+      Date: date,
+      Time: time,
     };
   });
   
@@ -151,7 +204,6 @@ async function validateAndProcessLogs(employeeId, logs) {
   const dailyLogs = {};
 
   for (const log of logs) {
-    // Replace dateStr "/" with "-". 
     const { Date: dateStr, Type: type, Time: timeStr } = log;
     const formattedType = type.toUpperCase();
     
@@ -177,14 +229,33 @@ async function validateAndProcessLogs(employeeId, logs) {
 
   for (const [date, entries] of Object.entries(dailyLogs)) {
     let lastAction = null;
+
     // Sort entries by time to find first and last entries easily
     entries.sort((a, b) => a.time - b.time);
 
+    // Check that the first action is TIME_IN
+    if (entries.length > 0 && entries[0].type !== "TIME_IN") {
+        return { error: true, message: `First action must be TIME_IN` };
+    }
+
     for (const entry of entries) {
-      if (lastAction === "TIME_OUT" && entry.type !== "TIME_IN") {
-        return { error: true, message: `Incorrect ordering on ${date}` };
-      }
-      lastAction = entry.type;
+        // Check if the last action is TIME_OUT and the current action is not TIME_IN
+        if (lastAction === "TIME_OUT" && entry.type !== "TIME_IN") {
+            return { error: true, message: `Incorrect ordering: TIME_OUT cannot be followed by ${entry.type}` };
+        }
+
+        // Check for consecutive BREAK actions
+        if (lastAction === "BREAK" && entry.type === "BREAK") {
+            return { error: true, message: `Incorrect ordering: Consecutive BREAK actions not allowed` };
+        }
+
+        // Update the last action
+        lastAction = entry.type;
+    }
+
+    // Check that the last action is TIME_OUT
+    if (lastAction !== "TIME_OUT") {
+        return { error: true, message: `Last action must be TIME_OUT` };
     }
   }
 
