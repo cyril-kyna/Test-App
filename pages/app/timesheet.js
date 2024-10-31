@@ -245,7 +245,7 @@ export default function Timesheet() {
                         <TableCell>{summary.fullName}</TableCell>
                         <TableCell>{summary.date}</TableCell>
                         <TableCell>{summary.totalTime}</TableCell>
-                        <TableCell>{summary.timeSpan}</TableCell>
+                        <TableCell>{`${summary.firstEntry} - ${summary.lastEntry}`}</TableCell>
                       </TableRow>
                     ))
                   ) : (
