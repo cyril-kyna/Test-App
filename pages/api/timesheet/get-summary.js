@@ -145,7 +145,7 @@ export default async function handler(req, res) {
       fullName,
       date: formatDateForDisplay(summary.date),
       totalTime: formatTimeInHHMMSS(summary.totalTime),
-      timeSpan: formatTimeForDisplay(summary.createdAt) + ' - ' + formatTimeForDisplay(summary.updatedAt),
+      timeSpan: summary.createdAt + ' - ' + summary.updatedAt,
     }));
 
     // Get total summaries count for pagination if not exporting
