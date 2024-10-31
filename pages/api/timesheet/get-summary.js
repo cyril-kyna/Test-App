@@ -3,34 +3,10 @@
 import { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/pages/api/auth/[...nextauth]';
+import { formatDateToAmPm, formatDateToDateWithWeekday, formatSecondsIntoHoursMinutesSeconds } from '@/lib/helpers';
+
 
 const prisma = new PrismaClient();
-
-// Helper function to format time in HH:MM:SS format
-function formatTimeInHHMMSS(totalTimeInSeconds) {
-  const hours = Math.floor(totalTimeInSeconds / 3600);
-  const minutes = Math.floor((totalTimeInSeconds % 3600) / 60);
-  const seconds = totalTimeInSeconds % 60;
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-}
-
-// Helper function to format date in a user-friendly format
-function formatDateForDisplay(date) {
-  return new Date(date).toLocaleDateString('en-US', {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
-}
-
-// Helper function to format time in a user-friendly format
-function formatTimeForDisplay(date) {
-  return new Date(date).toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
 
 // Helper function to fetch employee details
 async function getEmployeeDetails(employeeNo) {
@@ -143,10 +119,10 @@ export default async function handler(req, res) {
     // Format summaries for the response
     const formattedSummaries = dailySummaries.map((summary) => ({
       fullName,
-      date: formatDateForDisplay(summary.date),
-      totalTime: formatTimeInHHMMSS(summary.totalTime),
-      firstEntry: formatTimeForDisplay(summary.createdAt),
-      lastEntry: formatTimeForDisplay(summary.updatedAt),
+      date: formatDateToDateWithWeekday(summary.date),
+      totalTime: formatSecondsIntoHoursMinutesSeconds(summary.totalTime),
+      firstEntry: formatDateToAmPm(summary.createdAt),
+      lastEntry: formatDateToAmPm(summary.updatedAt),
     }));
 
     // Get total summaries count for pagination if not exporting
